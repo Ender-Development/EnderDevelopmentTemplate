@@ -8,13 +8,13 @@ output = [
 # <img src="src/main/resources/assets/template_mod/textures/logo.png" alt="Ender-Development.org Template" height="42" width="42"> Ender-Development.org Template
 <!---freshmark /header -->
 
-<!---freshmark description
+<!---freshmark shields
 output = [
 link(shield("Kotlin", "Kotlin", "{{kotlin_version}}", "blue"), "https://kotlinlang.org/"),
 link(shield("Java", "Java", "{{java_version}}", "blue"), "https://www.azul.com/downloads/?version=java-25-lts&package=jdk#zulu"),
 link(shield("Maven artifact", "Maven", "{{root_package}}:{{mod_id}}", "blue"), "https://maven.ender-development.org/" + "{{root_package}}/{{mod_id}}/".replaceAll("\\.", "/")),
 link(shield("Version", "Version", "{{mod_version}}", "blue"), "{{mod_url}}/commits/master"),
-link(shield("License", "License", "LGPL-3.0", "blue"), "{{mod_url}}/blob/master/LICENSE"),
+link(shield("License", "License", "{{license}}", "blue"), "{{mod_url}}/blob/master/LICENSE"),
 "",
 "{{mod_description}}".replace("Kotlin", link("Kotlin", "https://kotlinlang.org/")).replace("Java", link("Java", "https://www.java.com/en/")).replace("Catalyx", link("Catalyx", "https://github.com/Ender-Development/Catalyx"))
 ].join("\n")
@@ -26,4 +26,37 @@ link(shield("License", "License", "LGPL-3.0", "blue"), "{{mod_url}}/blob/master/
 [![License](https://img.shields.io/badge/License-LGPL--3.0-blue.svg)](https://github.com/Ender-Development/EnderDevelopmentTemplate/blob/master/LICENSE)
 
 Universal [Java](https://www.java.com/en/) / [Kotlin](https://kotlinlang.org/) Template for Minecraft 1.12 utilizing the latest tooling. Contains additional support for [Catalyx](https://github.com/Ender-Development/Catalyx) when using Kotlin.
+<!---freshmark /shields -->
+
+<!---freshmark description
+output = "{{readme}}".replaceAll("<br>", "\n")
+-->
+<p align='center'><a href='https://www.akliz.net/enderman'><img src='https://raw.githubusercontent.com/Ender-Development/.github/refs/heads/master/assets/ender-development/banner.png'/></a></p>
+
+# About
+This is the successor to our [Catalyx-Template]('https://github.com/Ender-Development/Catalyx-Template').The main changes are:
+- adapted [RFG 2.0+]('https://github.com/GTNewHorizons/RetroFuturaGradle/releases'), which requires Java 25 in the dev env
+- removed the build-in plugin, everything is now handled by `build.gradle.kts` and `settings.gradle.kts`
+- choose between Java and Kotlin, write your mod in whatever language you prefer
+- project configuration through `project.properties` and `dependencies.rpoperties` - the `gradle.properties` file is not intended to be edited by the user
+- dependencies are managed via a `keys#url` approach, for more information check out `dependencies.properties`
+
+Besides these the template still offers:
+- automatic Tag (Java) / Reference (Kotlin) class creation, based on `tags.properties`
+- built-in mixin, coremod and access transformer support, all configured via the `project.properties` defaulting to the common Ender-Development.org values
+- credential management via `secrets.properties`, check `secrets.example.properties` for a template
+- providing most common mavens by default
 <!---freshmark /description -->
+
+<!---freshmark partnership
+output = "{{partnership}}".replaceAll("<br>", "\n")
+-->
+# Partnership with Akliz
+> It's a pleasure to be partnered with Akliz. Besides being a fantastic server provider, which makes it incredibly easy to set up a server of your choice, they help me to push myself and the quality of my projects to the next level. Furthermore, you can click on the banner below to get a discount. :3
+
+<p align='center'><a href='https://www.akliz.net/enderman'><img src='https://raw.githubusercontent.com/Ender-Development/.github/refs/heads/master/assets/ender-development/partnership.png'/></a></p>
+
+If you aren't located in the [US](https://www.akliz.net/enderman), Akliz now offers servers in:
+- [Europe](https://www.akliz.net/enderman-eu)
+- [Oceania](https://www.akliz.net/enderman-oce)
+<!---freshmark /partnership -->
