@@ -34,8 +34,8 @@ output = "{{readme}}".replaceAll("<br>", "\n")
 <p align='center'><a href='https://www.akliz.net/enderman'><img src='https://raw.githubusercontent.com/Ender-Development/.github/refs/heads/master/assets/ender-development/banner.png'/></a></p>
 
 # About
-This is the successor to our [Catalyx-Template]('https://github.com/Ender-Development/Catalyx-Template').The main changes are:
-- adapted [RFG 2.0+]('https://github.com/GTNewHorizons/RetroFuturaGradle/releases'), which requires Java 25 in the dev env
+This is the successor to our [Catalyx-Template](https://github.com/Ender-Development/Catalyx-Template).The main changes are:
+- adapted [RFG 2.0+](https://github.com/GTNewHorizons/RetroFuturaGradle/releases), which requires Java 25 in the dev env
 - removed the build-in plugin, everything is now handled by `build.gradle.kts` and `settings.gradle.kts`
 - choose between Java and Kotlin, write your mod in whatever language you prefer
 - project configuration through `project.properties` and `dependencies.rpoperties` - the `gradle.properties` file is not intended to be edited by the user
