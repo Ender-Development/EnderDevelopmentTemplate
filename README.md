@@ -1,11 +1,12 @@
 <!---freshmark header
 output = [
 	'#',
-	'<img src="src/main/resources/{{mod_logo_path}}" alt="{{mod_name}}" height="42" width="42">',
+	'<img src="src/main/resources/{{mod_logo_path}}" height="42" width="42">',
     '{{mod_name}}'
 	].join(' ')
 -->
-# <img src="src/main/resources/assets/template_mod/textures/logo.png" alt="Ender-Development.org Template" height="42" width="42"> Ender-Development.org Template
+
+# <img src="src/main/resources/assets/template_mod/textures/logo.png" height="42" width="42"> Ender-Development.org Template
 <!---freshmark /header -->
 
 <!---freshmark shields
@@ -34,11 +35,12 @@ output = "{{readme}}".replaceAll("<br>", "\n")
 <p align='center'><a href='https://www.akliz.net/enderman'><img src='https://raw.githubusercontent.com/Ender-Development/.github/refs/heads/master/assets/ender-development/banner.png'/></a></p>
 
 # About
-This is the successor to our [Catalyx-Template](https://github.com/Ender-Development/Catalyx-Template).The main changes are:
+
+This is the successor to our [Catalyx-Template](https://github.com/Ender-Development/Catalyx-Template). The main changes are:
 - adapted [RFG 2.0+](https://github.com/GTNewHorizons/RetroFuturaGradle/releases), which requires Java 25 in the dev env
 - removed the build-in plugin, everything is now handled by `build.gradle.kts` and `settings.gradle.kts`
 - choose between Java and Kotlin, write your mod in whatever language you prefer
-- project configuration through `project.properties` and `dependencies.rpoperties` - the `gradle.properties` file is not intended to be edited by the user
+- project configuration through `project.properties` and `dependencies.properties` - the `gradle.properties` file is not intended to be edited by the user
 - dependencies are managed via a `keys#url` approach, for more information check out `dependencies.properties`
 
 Besides these the template still offers:
@@ -47,7 +49,7 @@ Besides these the template still offers:
 - credential management via `secrets.properties`, check `secrets.example.properties` for a template
 - providing most common mavens by default
 <!---freshmark /description -->
-
+<!-- modrinth_exclude.start -->
 <!---freshmark partnership
 output = "{{partnership}}".replaceAll("<br>", "\n")
 -->
@@ -60,3 +62,4 @@ If you aren't located in the [US](https://www.akliz.net/enderman), Akliz now off
 - [Europe](https://www.akliz.net/enderman-eu)
 - [Oceania](https://www.akliz.net/enderman-oce)
 <!---freshmark /partnership -->
+<!-- modrinth_exclude.end -->
