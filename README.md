@@ -5,7 +5,6 @@ output = [
     '{{mod_name}}'
 	].join(' ')
 -->
-
 # <img src="src/main/resources/assets/template_mod/textures/logo.png" height="42" width="42"> Ender-Development.org Template
 <!---freshmark /header -->
 
@@ -35,12 +34,14 @@ output = "{{readme}}".replaceAll("<br>", "\n")
 <p align='center'><a href='https://www.akliz.net/enderman'><img src='https://raw.githubusercontent.com/Ender-Development/.github/refs/heads/master/assets/ender-development/banner.png'/></a></p>
 
 # About
-
 This is the successor to our [Catalyx-Template](https://github.com/Ender-Development/Catalyx-Template). The main changes are:
 - adapted [RFG 2.0+](https://github.com/GTNewHorizons/RetroFuturaGradle/releases), which requires Java 25 in the dev env
 - removed the build-in plugin, everything is now handled by `build.gradle.kts` and `settings.gradle.kts`
 - choose between Java and Kotlin, write your mod in whatever language you prefer
-- project configuration through `project.properties` and `dependencies.properties` - the `gradle.properties` file is not intended to be edited by the user
+- project configuration through `project.properties`, `dependencies.properties`, and `tags.properties`
+- the `gradle.properties` file is no longer intended to be edited by the user
+- automated mixin file generation
+- all `*.properties` can be used in lang and mixin files
 - dependencies are managed via a `keys#url` approach, for more information check out `dependencies.properties`
 
 Besides these the template still offers:
