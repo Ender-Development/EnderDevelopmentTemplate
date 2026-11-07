@@ -1,0 +1,12 @@
+* text=auto
+
+*.java    text eol=lf
+*.kt      text eol=lf
+*.json    text eol=lf
+*.info    text eol=lf
+*.mcmeta  text eol=lf
+*.md      text eol=lf
+*.sh      text eol=lf
+
+*.jar     binary
+*.png     binary
