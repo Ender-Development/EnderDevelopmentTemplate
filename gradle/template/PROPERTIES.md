@@ -605,6 +605,32 @@ Enable features related to publishing to Modrinth
 - **Required:** no
 - **Default:** `false`
 
+## 📖 README.md
+
+### `license`
+
+The license this project is published under.
+
+- **Type:** String
+- **Required:** no
+- **Default:** `All Rights Reserved`
+
+### `partnership`
+
+A section about a partnership if there is one to promote. Use `<br>` for linebreak. An example can be found in the `project.properties`.
+
+- **Type:** String
+- **Required:** no
+- **Default:** `No Partnership to promote`
+
+### `readme`
+
+A longer description about the features of this mod. Use `<br>` for linebreak. An example can be found in the `project.properties`.
+
+- **Type:** String
+- **Required:** no
+- **Default:** `No README provided`
+
 ## 🛠️ Utility - .editorconfig
 
 ### `disable_editorconfig`
