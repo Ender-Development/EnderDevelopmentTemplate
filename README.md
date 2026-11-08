@@ -40,6 +40,7 @@ This is the successor to our [Catalyx-Template](https://github.com/Ender-Develop
 - choose between Java and Kotlin, write your mod in whatever language you prefer
 - project configuration through `project.properties`, `dependencies.properties`, and `tags.properties`
 - the `gradle.properties` file is no longer intended to be edited by the user
+- automated property documentation, see [PROPERTIES.md](gradle/template/PROPERTIES.md)
 - automated mixin file generation
 - all `*.properties` can be used in lang and mixin files
 - dependencies are managed via a `keys#url` approach, for more information check out `dependencies.properties`
