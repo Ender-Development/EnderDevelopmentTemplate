@@ -1,19 +1,48 @@
-* text=auto
+# Normalise on commit, check out LF everywhere. Windows contributors included.
+* text=auto eol=lf
 
-*.java    text eol=lf
-*.kt      text eol=lf
-*.json    text eol=lf
-*.info    text eol=lf
-*.mcmeta  text eol=lf
-*.lang    text eol=lf
-*glsl     text eol=lf
-*.md      text eol=lf
-*.sh      text eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
 
-*.bat     text eol=crlf
-*.cmd     text eol=crlf
-*.ps1     text eol=crlf
+gradlew text eol=lf
+*.sh text eol=lf
 
-*.jar     binary
-*.png     binary
-*.nbt     binary
+*.glsl text
+*.gradle text
+*.groovy text
+*.info text
+*.java text
+*.json text
+*.json5 text
+*.kt text
+*.kts text
+*.lang text
+*.mcmeta text
+*.md text
+*.properties text
+*.scala text
+*.toml text
+*.xml text
+*.yaml text
+*.yml text
+
+*.class binary
+*.dat binary
+*.dll binary
+*.dylib binary
+*.gif binary
+*.jar binary
+*.jpeg binary
+*.jpg binary
+*.nbt binary
+*.ogg binary
+*.otf binary
+*.png binary
+*.so binary
+*.ttf binary
+*.wav binary
+*.zip binary
+
+# Keep the wrapper jar out of diffs, it is verified by checksum
+**/gradle/wrapper/gradle-wrapper.jar binary linguist-vendored linguist-generated
