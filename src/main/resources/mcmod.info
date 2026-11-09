@@ -1,15 +1,15 @@
 [
-    {
-        "authorList": [
-            "${mod_authors}"
-        ],
-        "credits": "${mod_credits}",
-        "description": "${mod_description}",
-        "logoFile": "${mod_logo_path}",
-        "mcversion": "${minecraft_version}",
-        "modid": "${mod_id}",
-        "name": "${mod_name}",
-        "url": "${mod_url}",
-        "version": "${mod_version}"
-    }
+  {
+    "authorList": [
+      "${mod_authors}"
+    ],
+    "credits": "${mod_credits}",
+    "description": "${mod_description}",
+    "logoFile": "${mod_logo_path}",
+    "mcversion": "${minecraft_version}",
+    "modid": "${mod_id}",
+    "name": "${mod_name}",
+    "url": "${mod_url}",
+    "version": "${mod_version}"
+  }
 ]

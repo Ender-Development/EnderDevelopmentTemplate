@@ -24,8 +24,7 @@ link(shield("License", "License", "{{license}}", "blue"), "{{mod_url}}/blob/mast
 [![Version](https://img.shields.io/badge/Version-0.1.0-blue.svg)](https://github.com/Ender-Development/EnderDevelopmentTemplate/commits/master)
 [![License](https://img.shields.io/badge/License-LGPL--3.0-blue.svg)](https://github.com/Ender-Development/EnderDevelopmentTemplate/blob/master/LICENSE)
 
-> Universal [Java](https://www.java.com/en/) / [Kotlin](https://kotlinlang.org/) Template for Minecraft 1.12 utilizing the latest tooling. Contains additional support
-> for [Catalyx](https://github.com/Ender-Development/Catalyx) when using Kotlin. If you have further questions, feel free to reach out to us.
+> Universal [Java](https://www.java.com/en/) / [Kotlin](https://kotlinlang.org/) Template for Minecraft 1.12 utilizing the latest tooling. Contains additional support for [Catalyx](https://github.com/Ender-Development/Catalyx) when using Kotlin. If you have further questions, feel free to reach out to us.
 <!---freshmark /shields -->
 <!---freshmark description
 output = "{{readme}}".replaceAll("<br>", "\n")

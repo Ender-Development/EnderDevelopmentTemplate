@@ -9,6 +9,9 @@ trim_trailing_whitespace = true
 insert_final_newline = true
 max_line_length = 200
 
+[{*.json,*.mcmeta,*.info}]
+indent_size = 2
+
 [*.properties]
 ij_any_spaces_around_assignment_operators = true
 ij_any_keep_line_breaks = true

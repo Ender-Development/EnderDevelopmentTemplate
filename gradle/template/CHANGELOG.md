@@ -5,11 +5,20 @@ Writing a changelog is a good practice for maintaining a clear history of change
 Try to follow the [Common Changelog](https://common-changelog.org/) conventions.
 -->
 
+## [2.0.1] - 2026-11-09
+
+_IntelliJ Formatting_
+
+- fix auto formatting of `*.properties` files
+- improve docs for `tags.properties` and `secrets.example.properties`
+- set vendor and langVersion for Idea
+
 ## [2.0.0] - 2026-11-09
 
 _The major refactor_
 
-- rewritten all buildscripts from scratch
-- we no longer ship our own plugin in the template
+- rewrite all buildscripts from scratch
+- remove custom plugin
+- move functionality to `build.gradle.kts`
 - updated RFG to 2.0.6
 

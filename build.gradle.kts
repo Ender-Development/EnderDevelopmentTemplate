@@ -1,4 +1,4 @@
-// v2.0.0
+// v2.0.1
 
 /**
  * [Universal Template for Ender-Development.org](https://github.com/Ender-Development/EnderDevelopmentTemplate)
@@ -18,6 +18,7 @@ import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import net.darkhax.curseforgegradle.TaskPublishCurseForge
 import org.gradle.internal.extensions.core.extra
+import org.gradle.plugins.ide.idea.model.IdeaLanguageLevel
 import org.jetbrains.changelog.Changelog
 import org.jetbrains.gradle.ext.Gradle
 import org.jetbrains.gradle.ext.compiler
@@ -275,6 +276,8 @@ idea {
         isDownloadSources = true
     }
     project {
+        jdkName = "azul-25"
+        languageLevel = IdeaLanguageLevel(8)
         settings {
             taskTriggers { afterSync("afterSync") }
             runConfigurations {
