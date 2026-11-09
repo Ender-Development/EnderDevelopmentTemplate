@@ -2,12 +2,11 @@
 output = [
 	'#',
 	'<img src="src/main/resources/{{mod_logo_path}}" height="42" width="42">',
-    '{{mod_name}}'
+'{{mod_name}}'
 	].join(' ')
 -->
 # <img src="src/main/resources/assets/template_mod/textures/logo.png" height="42" width="42"> Ender-Development.org Template
 <!---freshmark /header -->
-
 <!---freshmark shields
 output = [
 link(shield("Kotlin", "Kotlin", "{{kotlin_version}}", "blue"), "https://kotlinlang.org/"),
@@ -16,7 +15,7 @@ link(shield("Maven artifact", "Maven", "{{root_package}}:{{mod_id}}", "blue"), "
 link(shield("Version", "Version", "{{mod_version}}", "blue"), "{{mod_url}}/commits/master"),
 link(shield("License", "License", "{{license}}", "blue"), "{{mod_url}}/blob/master/LICENSE"),
 "",
-"{{mod_description}}".replace("Kotlin", link("Kotlin", "https://kotlinlang.org/")).replace("Java", link("Java", "https://www.java.com/en/")).replace("Catalyx", link("Catalyx", "https://github.com/Ender-Development/Catalyx"))
+"> {{mod_description}}".replace("Kotlin", link("Kotlin", "https://kotlinlang.org/")).replace("Java", link("Java", "https://www.java.com/en/")).replace("Catalyx", link("Catalyx", "https://github.com/Ender-Development/Catalyx"))
 ].join("\n")
 -->
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.4.20-blue.svg)](https://kotlinlang.org/)
@@ -25,13 +24,13 @@ link(shield("License", "License", "{{license}}", "blue"), "{{mod_url}}/blob/mast
 [![Version](https://img.shields.io/badge/Version-0.1.0-blue.svg)](https://github.com/Ender-Development/EnderDevelopmentTemplate/commits/master)
 [![License](https://img.shields.io/badge/License-LGPL--3.0-blue.svg)](https://github.com/Ender-Development/EnderDevelopmentTemplate/blob/master/LICENSE)
 
-Universal [Java](https://www.java.com/en/) / [Kotlin](https://kotlinlang.org/) Template for Minecraft 1.12 utilizing the latest tooling. Contains additional support for [Catalyx](https://github.com/Ender-Development/Catalyx) when using Kotlin.
+> Universal [Java](https://www.java.com/en/) / [Kotlin](https://kotlinlang.org/) Template for Minecraft 1.12 utilizing the latest tooling. Contains additional support
+> for [Catalyx](https://github.com/Ender-Development/Catalyx) when using Kotlin. If you have further questions, feel free to reach out to us.
 <!---freshmark /shields -->
-
 <!---freshmark description
 output = "{{readme}}".replaceAll("<br>", "\n")
 -->
-<p align='center'><a href='https://www.akliz.net/enderman'><img src='https://raw.githubusercontent.com/Ender-Development/.github/refs/heads/master/assets/ender-development/banner.png'/></a></p>
+<a href='https://www.akliz.net/enderman'><img src='https://raw.githubusercontent.com/Ender-Development/.github/refs/heads/master/assets/ender-development/banner.png' alt='Promotional Banner'/></a>
 
 # About
 This is the successor to our [Catalyx-Template](https://github.com/Ender-Development/Catalyx-Template). The main changes are:
@@ -42,6 +41,7 @@ This is the successor to our [Catalyx-Template](https://github.com/Ender-Develop
 - the `gradle.properties` file is no longer intended to be edited by the user
 - automated property documentation, see [PROPERTIES.md](gradle/template/PROPERTIES.md)
 - automated mixin file generation
+- automated `README.md` population
 - all `*.properties` can be used in lang and mixin files
 - dependencies are managed via a `keys#url` approach, for more information check out `dependencies.properties`
 
@@ -58,7 +58,7 @@ output = "{{partnership}}".replaceAll("<br>", "\n")
 # Partnership with Akliz
 > It's a pleasure to be partnered with Akliz. Besides being a fantastic server provider, which makes it incredibly easy to set up a server of your choice, they help me to push myself and the quality of my projects to the next level. Furthermore, you can click on the banner below to get a discount. :3
 
-<p align='center'><a href='https://www.akliz.net/enderman'><img src='https://raw.githubusercontent.com/Ender-Development/.github/refs/heads/master/assets/ender-development/partnership.png'/></a></p>
+<p align='center'><a href='https://www.akliz.net/enderman'><img src='https://raw.githubusercontent.com/Ender-Development/.github/refs/heads/master/assets/ender-development/partnership.png' alt='Akliz Official Partner'/></a></p>
 
 If you aren't located in the [US](https://www.akliz.net/enderman), Akliz now offers servers in:
 - [Europe](https://www.akliz.net/enderman-eu)
