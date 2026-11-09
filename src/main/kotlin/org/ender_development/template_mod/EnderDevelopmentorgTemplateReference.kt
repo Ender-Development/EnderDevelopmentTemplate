@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2026 Ender-Development.org
+ * SPDX-License-Identifier: LGPL-3.0
+ */
+
 package org.ender_development.template_mod
 
 internal typealias Reference = EnderDevelopmentorgTemplateReference
@@ -18,7 +23,7 @@ object EnderDevelopmentorgTemplateReference {
     const val KOTLIN_LANGUAGE_ADAPTER = "io.github.chaosunity.forgelin.KotlinAdapter"
     const val KOTLIN_VERSION = "2.4.20"
     const val MIXINBOOTER_VERSION = 12.3
-    const val AUTHOR = "Ender-Development"
+    const val AUTHOR = "Ender-Development.org"
     const val CONFIGANYTIME_VERSION = 3.0
     const val THEONEPROBE_VERSION = 7095096
     const val FORGELIN_VERSION = "2.4.20.0"
