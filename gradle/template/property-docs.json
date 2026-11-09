@@ -23,9 +23,9 @@
         "category": "\ud83d\udee0\ufe0f Utility - Access Transformers",
         "description": "Change location and name of the AT file"
     },
-    "additional_dependecies": {
+    "additional_dependencies": {
         "category": "\ud83d\udcf0 Publishing",
-        "description": "Project names that should be added as 'required'. Once used in the project except the ones from `dependencies.properties` are added by default."
+        "description": "Project names that should be added as 'required'. Mods with build-in integration except the ones from `dependencies.properties` are taken care of automatically."
     },
     "assetmover_version": {
         "category": "\ud83d\udd2d Integration - AssetMover",
@@ -143,6 +143,10 @@
         "category": "\ud83d\udd2d Integration - GroovyScript",
         "description": "Instead of using the GroovyScript folder in run/groovyscript, use the 'examples' folder instead."
     },
+    "gson_version": {
+        "category": "",
+        "description": ""
+    },
     "hei_version": {
         "category": "\ud83d\udd2d Integration - Had Enough Items",
         "description": "Provided by the template via `gradle.properties`"
@@ -257,7 +261,7 @@
     },
     "modrinth_sync_readme": {
         "category": "\ud83d\udcf0 Publishing - Modrinth",
-        "description": "Allows gradle to sync the README.md to the Modrinth project body"
+        "description": "Allows Gradle to sync the README.md to the Modrinth project body"
     },
     "modularui_version": {
         "category": "\ud83d\udd2d Integration - ModularUI",

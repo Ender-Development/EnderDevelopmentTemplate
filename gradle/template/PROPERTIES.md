@@ -459,9 +459,9 @@ The root package for your mod's main class. Change this to your own package. Thi
 
 ## 📰 Publishing
 
-### `additional_dependecies`
+### `additional_dependencies`
 
-Project names that should be added as 'required'. Once used in the project except the ones from `dependencies.properties` are added by default.
+Project names that should be added as 'required'. Mods with build-in integration except the ones from `dependencies.properties` are taken care of automatically.
 
 - **Type:** List (delimiter `" "`)
 - **Required:** no
@@ -582,7 +582,7 @@ The Modrinth ID of your project
 
 ### `modrinth_sync_readme`
 
-Allows gradle to sync the README.md to the Modrinth project body
+Allows Gradle to sync the README.md to the Modrinth project body
 
 - **Type:** Boolean
 - **Required:** no
@@ -804,3 +804,14 @@ The path where the generated Tags class will be placed. Separators should be dot
 - **Type:** Evaluated String
 - **Required:** no
 - **Default:** `${root_package}.${mod_id}.Tags`
+
+## ⚠️ Uncategorized
+
+### `gson_version`
+
+_No description yet._
+
+- **Type:** String
+- **Required:** yes
+- **Default:** none
+
