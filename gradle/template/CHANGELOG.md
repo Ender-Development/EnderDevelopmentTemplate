@@ -12,3 +12,4 @@ _The major refactor_
 - rewritten all buildscripts from scratch
 - we no longer ship our own plugin in the template
 - updated RFG to 2.0.6
+
