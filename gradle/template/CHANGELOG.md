@@ -5,7 +5,7 @@ Writing a changelog is a good practice for maintaining a clear history of change
 Try to follow the [Common Changelog](https://common-changelog.org/) conventions.
 -->
 
-## [2.0.0] - 2026-11-XX
+## [2.0.0] - 2026-11-09
 
 _The major refactor_
 
