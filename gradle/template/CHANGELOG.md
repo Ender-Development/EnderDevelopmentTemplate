@@ -5,6 +5,12 @@ Writing a changelog is a good practice for maintaining a clear history of change
 Try to follow the [Common Changelog](https://common-changelog.org/) conventions.
 -->
 
+## [2.0.2] - 2026-11-09
+
+_Java Auto Import_
+
+- disable Java star import
+
 ## [2.0.1] - 2026-11-09
 
 _IntelliJ Formatting_
