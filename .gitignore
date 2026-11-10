@@ -26,3 +26,6 @@ run
 .vscode
 *.log
 *.bak
+
+# don't commit the Kotlin Reference Object as it is generated dynamically
+src/main/kotlin/*/*/*/*Reference.kt
