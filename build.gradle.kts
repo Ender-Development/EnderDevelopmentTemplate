@@ -1239,6 +1239,7 @@ changelog {
     versionPrefix.set("")
     groups.set(changelogGroups)
     repositoryUrl.set(modUrl)
+    path = changelogFile.canonicalPath
 }
 
 fun git(vararg args: String): String {
