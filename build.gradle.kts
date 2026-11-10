@@ -1,4 +1,4 @@
-// v2.0.3
+// v2.0.4
 
 /**
  * [Universal Template for Ender-Development.org](https://github.com/Ender-Development/EnderDevelopmentTemplate)
@@ -96,7 +96,7 @@ fun evalPropValue(value: String): String {
         template.findAll(value).forEach {
             val placeholder = it.value
             val key = it.groupValues[1]
-            val replacement = evalProp(key)
+            val replacement = if (key == "mod_version") modVersion else evalProp(key)
             result = result.replace(placeholder, replacement)
         }
         return result
@@ -118,7 +118,6 @@ fun evalPropValue(value: String): String {
 
 val isTemplateRepo = isTemplate()
 val versionGradle = getProp("gradle_version")
-val versionBuildscript = getProp("buildscript_version")
 val kotlinVersion = getProp("kotlin_version")
 val useKotlin = getProp("use_kotlin", false).toBoolean()
 val editorconfig = getProp("editorconfig", "spotless")
@@ -131,7 +130,8 @@ val userName = when {
 
 val modId = getProp("mod_id").lowercase().trim().replace(" ", "_")
 val modName = getProp("mod_name")
-val modVersion = if (isTemplateRepo) property("buildscript_version").toString() else getProp("mod_version")
+val modVersion = project.version.toString()
+val releaseVersion = modVersion.split("-").first()
 
 val modDescription = getProp("mod_description", "")
 val modAuthors = getPropList("mod_authors", ",").joinToString(", ")
@@ -162,6 +162,7 @@ val useMixins = evalProp("use_mixins", false).toBoolean()
 val mixinRefMap = evalProp("mixin_refmap", $$"mixins.${mod_id}.refmap.json")
 val mixinConnectorClass = evalProp("mixin_connector_class", $$"${root_package}.${mod_id}.MixinConnector")
 
+val mavenUrl = getProp("maven_url", "https://maven.ender-development.org")
 val releaseType = getProp("release_type", "release")
 if (!listOf("release", "beta", "alpha").contains(releaseType)) throw GradleException("'release_type' is none of ['release', 'beta', 'alpha']")
 val isServer = getProp("is_server_side", true).toBoolean()
@@ -186,12 +187,13 @@ val modDependencies = listOf(
     ModDependency("expanded-events", useExpandedEvents, "D#curse.maven:expanded-events-1396395:${getProp("expandedevents_version")}", availableOnModrinth = false),
 )
 
+val useSpotless = getProp("disable_spotless", false).toBoolean()
+
 val rmLicense = getProp("license", "All Rights Reserved")
 val rmContent = evalProp("readme", $$"${mod_description}")
 val rmPartnership = getProp("partnership", "")
 
 group = rootPackage
-version = modVersion
 
 base {
     archivesName = modId
@@ -283,13 +285,16 @@ idea {
             runConfigurations {
                 clear()
                 var index = 0
-                add(Gradle("${index++}. Run Client").apply { setProperty("taskNames", listOf("runClient")) })
-                add(Gradle("${index++}. Run Server").apply { setProperty("taskNames", listOf("runServer")) })
-                add(Gradle("${index++}. Run Obfuscated Client").apply { setProperty("taskNames", listOf("runObfClient")) })
-                add(Gradle("${index++}. Run Obfuscated Server").apply { setProperty("taskNames", listOf("runObfServer")) })
-                add(Gradle("${index++}. Build Jars").apply { setProperty("taskNames", listOf("build")) })
-                add(Gradle("${index++}. Publish to Maven").apply { setProperty("taskNames", listOf("publish")) })
+                add(Gradle("${index++}. Run Client").apply { setProperty("taskNames", listOf(tasks.runClient)) })
+                add(Gradle("${index++}. Run Server").apply { setProperty("taskNames", listOf(tasks.runServer)) })
+                add(Gradle("${index++}. Run Obfuscated Client").apply { setProperty("taskNames", listOf(tasks.runObfClient)) })
+                add(Gradle("${index++}. Run Obfuscated Server").apply { setProperty("taskNames", listOf(tasks.runObfServer)) })
+                add(Gradle("${index++}. Build Jars").apply { setProperty("taskNames", listOf(tasks.build)) })
+                add(Gradle("${index++}. Publish to Maven").apply { setProperty("taskNames", listOf(tasks.publish)) })
                 add(Gradle("${index++}. Update Buildscripts").apply { setProperty("taskNames", listOf("updateBuildScript")) })
+                if (useSpotless) {
+                    add(Gradle("${index++}. Apply Spotless").apply { setProperty("taskNames", listOf(tasks.spotlessApply)) })
+                }
                 if (isTemplateRepo) {
                     add(Gradle("${index++}. Generate Template Docs").apply { setProperty("taskNames", listOf("generatePropertyDocs")) })
                 }
@@ -360,7 +365,7 @@ publishing {
     repositories {
         maven {
             name = evalProp("maven_name", $$"${mod_id}")
-            url = uri(getProp("maven_url", "https://maven.ender-development.org"))
+            url = uri(mavenUrl)
             credentials {
                 username = getPropEnv("MAVEN_USERNAME")
                 password = getPropEnv("MAVEN_PASSWORD")
@@ -504,15 +509,18 @@ configure<SpotlessExtension> {
         properties {
             putAll(extra.properties.mapValues { evalPropValue(it.value.toString()) })
             put("repoName", repoName)
+            put("mavenUrl", mavenUrl)
             put("LICENSE", rmLicense)
             put("README", rmContent)
             put("SPONSOR", rmPartnership)
-            put("VERSION", modVersion)
+            put("VERSION", releaseVersion)
         }
     }
     flexmark {
-        target(".github/**/*.md", "docs/**/*.md", "gradle/**/*.md", "src/*/resources/**/*.md", "*.md")
+        target(".github/**/*.md", "docs/**/*.md", "gradle/**/*.md", "src/*/resources/**/*.md", "CHANGELOG.md")
         flexmark(getProp("flexmark_version"))
+        trimTrailingWhitespace()
+        endWithNewline()
     }
     json {
         target("src/*/resources/**/*.json", "src/*/resources/*.info", "src/*/resources/**/*.mcmeta", "examples/**/*.json", "run/groovy/**/*.json")
@@ -532,7 +540,12 @@ configure<SpotlessExtension> {
         )
     }
     if (editorconfig != "spotless") return@configure
-    val header = $$"/*\n * Copyright (c) $YEAR $${getPropList("mod_authors", ",").first()}\n * SPDX-License-Identifier: $${getProp("license", "LGPL-3.0-only")}\n */\n\n"
+    fun cSpan(): String {
+        val yFrom = git("log", "--max-parents=0", "--format=%as").split("-").first()
+        val yLast = git("log", "-1", "--format=%as").split("-").first()
+        return if (yFrom == yLast) yFrom else "$yFrom-$yLast"
+    }
+    val header = $$"/*\n * Copyright (c) $${cSpan()} $${getPropList("mod_authors", ",").first()}\n * SPDX-License-Identifier: $${getProp("license", "LGPL-3.0-only")}\n */\n\n"
     java {
         target("src/main/java/**/*.java")
         importOrder()
@@ -575,12 +588,13 @@ tasks.register("afterSync") {
         "switchEditorConfig",
         "createReference",
         "createIJScope",
-        "spotlessApply",
         "checkBuildScriptUpdate",
         "syncBuildScriptVersion",
         "generateMixinJson",
         "checkPropertyDocs",
+        tasks.spotlessApply,
     )
+    doLast { logger.lifecycle("Current Project Version: $modVersion") }
 }
 
 fun guessIndent(): String {
@@ -616,7 +630,7 @@ listOf("runClient", "runServer").forEach { task ->
                 getProp("grs_disable_cache", false) to "-Dgroovyscript.disable_cache=true",
             ).filter { it.first.toBoolean() }.map { it.second }.forEach { jvmArgs(it) }
         }
-        logger.lifecycle(jvmArgs.toString())
+        if (jvmArgs.isNotEmpty()) logger.lifecycle(jvmArgs.toString())
     }
 }
 
@@ -633,7 +647,7 @@ tasks.injectTags.configure {
 }
 tasks.prepareObfModsFolder.configure { finalizedBy("prioritizeCoremods") }
 tasks.spotlessApply.configure {
-    onlyIf { !getProp("disable_spotless", false).toBoolean() }
+    onlyIf { useSpotless }
 }
 tasks.register("prioritizeCoremods") {
     description = "Load MixinBooter and ConfigAnytime before everything else"
@@ -953,20 +967,19 @@ tasks.register("syncBuildScriptVersion") {
     onlyIf { isTemplateRepo }
 
     doLast {
-        val version = versionBuildscript
-        require(Regex("""\d+(\.\d+)*""").matches(version)) {
-            "buildscript_version '$version' is not a valid version (expected e.g. 1.2.3)"
+        require(Regex("""\d+(\.\d+)*""").matches(releaseVersion)) {
+            "buildscript_version '$releaseVersion' is not a valid version (expected e.g. 1.2.3)"
         }
 
         for ((filePath, headerPrefix, headerSuffix) in versionedFiles) {
             val target = file(filePath)
             val old = target.readText()
-            val new = withVersionHeader(old, headerPrefix, headerSuffix, version)
+            val new = withVersionHeader(old, headerPrefix, headerSuffix, releaseVersion)
             if (new != old) {
                 target.writeText(new)
-                logger.lifecycle("Set $filePath header to $headerPrefix$version$headerSuffix")
+                logger.lifecycle("Set $filePath header to $headerPrefix$releaseVersion$headerSuffix")
             } else {
-                logger.lifecycle("$filePath already at $version")
+                logger.lifecycle("$filePath already at $releaseVersion")
             }
         }
     }
@@ -1212,5 +1225,125 @@ tasks.register("generatePropertyDocs") {
             logger.lifecycle("Fill in their category and description, then run this task again.")
         }
         logger.lifecycle("Wrote ${propDocFile.name} (${usages.size} properties).")
+        tasks.spotlessApply
+    }
+}
+
+val changelogGroups = listOf("Changes", "Bugfixes", "Miscellaneous")
+val prefixToGroup = mapOf("fix" to "Bugfixes", "misc" to "Miscellaneous")
+val changelogFile = file(if (isTemplateRepo) "gradle/template/CHANGELOG.md" else "CHANGELOG.md")
+
+changelog {
+    version.set(modVersion)
+    versionPrefix.set("")
+    groups.set(changelogGroups)
+    repositoryUrl.set(modUrl)
+}
+
+fun git(vararg args: String): String {
+    val p = ProcessBuilder("git", *args)
+        .directory(rootDir)
+        .redirectErrorStream(true)
+        .start()
+    val out = p.inputStream.bufferedReader().readText().trim()
+    check(p.waitFor() == 0) { "git ${args.joinToString(" ")} failed:\n$out" }
+    return out
+}
+
+tasks.register("verifyRelease") {
+    group = "release"
+    description = "Fails unless tree is clean, HEAD is untagged and the version is final"
+    notCompatibleWithConfigurationCache("runs git")
+    val v = modVersion
+    doLast {
+        check(git("status", "--porcelain").isEmpty()) { "Working tree is not clean" }
+        check(git("tag", "--points-at", "HEAD").isEmpty()) { "HEAD is already tagged, nothing to release" }
+        check('-' !in v) { "Not a release version ($v). Run with -Preckon.stage=final" }
+    }
+}
+tasks.register("collectCommits") {
+    group = "release"
+    description = "Adds commits since the last tag to [Unreleased], grouped by prefix"
+    notCompatibleWithConfigurationCache("runs git")
+    dependsOn("verifyRelease")
+    doLast {
+        val lastTag = runCatching { git("describe", "--tags", "--abbrev=0", "--match", "[0-9]*") }.getOrNull()
+        val range = if (lastTag != null) "$lastTag..HEAD" else "HEAD"
+        val subjects = git("log", range, "--no-merges", "--pretty=format:%s").lines().filter { it.isNotBlank() && !it.startsWith("Release ") }
+        val prefix = Regex("^(fix|misc)\\s*:\\s*(.+)$", RegexOption.IGNORE_CASE)
+        val newEntries: List<Pair<String, String>> = subjects.map { s ->
+            val m = prefix.find(s)
+            if (m != null) {
+                prefixToGroup.getValue(m.groupValues[1].lowercase()) to m.groupValues[2].trim()
+            } else {
+                "Changes" to s.trim()
+            }
+        }
+        val lines = changelogFile.readLines()
+        val start = lines.indexOfFirst { it.trim().startsWith("## [Unreleased]") }
+        require(start >= 0) { "No '## [Unreleased]' section in CHANGELOG.md" }
+        val linkRef = Regex("^\\[[^]]+]:\\s")
+        val end = (start + 1 until lines.size).firstOrNull { lines[it].startsWith("## ") || linkRef.containsMatchIn(lines[it]) } ?: lines.size
+        val grouped = linkedMapOf<String, MutableList<String>>()
+        changelogGroups.forEach { grouped[it] = mutableListOf() }
+        var current = "Changes"
+        for (line in lines.subList(start + 1, end)) {
+            when {
+                line.startsWith("### ") -> {
+                    current = line.removePrefix("### ").trim()
+                    grouped.getOrPut(current) { mutableListOf() }
+                }
+
+                line.isBlank() -> Unit
+
+                line.startsWith("- ") || line.startsWith("* ") ->
+                    grouped.getOrPut(current) { mutableListOf() }.add(line.drop(2).trim())
+
+                else -> {
+                    val items = grouped[current]
+                    if (!items.isNullOrEmpty()) {
+                        items[items.lastIndex] = items.last() + "\n" + line
+                    }
+                }
+            }
+        }
+        var added = 0
+        for ((group, text) in newEntries) {
+            if (grouped.values.none { text in it }) {
+                grouped.getOrPut(group) { mutableListOf() }.add(text)
+                added++
+            }
+        }
+        if (added == 0) {
+            logger.lifecycle("No new changelog entries")
+            return@doLast
+        }
+        val body = buildList {
+            add("")
+            grouped.filterValues { it.isNotEmpty() }.forEach { (g, items) ->
+                add("### $g")
+                items.forEach { add("- $it") }
+                add("")
+            }
+        }
+        val result = lines.subList(0, start + 1) + body + lines.subList(end, lines.size)
+        changelogFile.writeText(result.joinToString("\n") + "\n")
+        logger.lifecycle("Added $added changelog entries")
+    }
+}
+tasks.patchChangelog {
+    mustRunAfter("collectCommits")
+}
+tasks.register("release") {
+    group = "release"
+    description = "Changelog -> commit -> tag -> push. Run with -Preckon.stage=final"
+    notCompatibleWithConfigurationCache("runs git")
+    dependsOn("verifyRelease", "collectCommits", tasks.patchChangelog)
+    val v = modVersion
+    doLast {
+        git("add", "CHANGELOG.md")
+        git("commit", "-m", "Release $v")
+        git("tag", "-a", v, "-m", "Release $v")
+        git("push", "--follow-tags")
     }
 }
