@@ -1270,7 +1270,7 @@ tasks.register("tagRelease") {
     dependsOn("verifyRelease", tasks.build, "collectCommits", tasks.patchChangelog)
     val v = modVersion
     doLast {
-        git("add", "CHANGELOG.md")
+        git("add", changelogFile.canonicalPath)
         git("commit", "-m", "Release $v")
         git("tag", "-a", v, "-m", "Release $v")
     }
