@@ -391,14 +391,6 @@ This can also be set via the `DEV_USERNAME` variable.
 
 ## 🗺️ Project
 
-### `mod_version`
-
-HIGHLY RECOMMEND complying with [SemVer](https://semver.org/) for `mod_version`
-
-- **Type:** String
-- **Required:** yes
-- **Default:** none
-
 ### `mod_authors`
 
 Authors of the mod. Separate multiple authors with commas.
@@ -627,15 +619,15 @@ A section about a partnership if there is one to promote. Use `<br>` for linebre
 
 - **Type:** String
 - **Required:** no
-- **Default:** `No Partnership to promote`
+- **Default:** `""`
 
 ### `readme`
 
 A longer description about the features of this mod. Use `<br>` for linebreak. An example can be found in the `project.properties`.
 
-- **Type:** String
+- **Type:** Evaluated String
 - **Required:** no
-- **Default:** `No README provided`
+- **Default:** `${mod_description}`
 
 ## 🛠️ Utility - .editorconfig
 
@@ -649,7 +641,7 @@ Use this to prevent the buildscripts from overriding your `.editorconfig` file
 
 ### `editorconfig`
 
-Must be on of [`roz`, `spotless`].
+Must be on of [`roz`, `spotless`]. 
 
 - **Type:** String
 - **Required:** no
@@ -824,4 +816,3 @@ The path where the generated Tags class will be placed. Separators should be dot
 - **Type:** Evaluated String
 - **Required:** no
 - **Default:** `${root_package}.${mod_id}.Tags`
-

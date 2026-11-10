@@ -255,10 +255,6 @@
         "category": "\ud83d\uddfa\ufe0f Project",
         "description": "The URL to the homepage of the mod or its git repository."
     },
-    "mod_version": {
-        "category": "\ud83d\uddfa\ufe0f Project",
-        "description": "HIGHLY RECOMMEND complying with [SemVer](https://semver.org/) for `mod_version`"
-    },
     "modrinth_debug": {
         "category": "\ud83d\udcf0 Publishing - Modrinth",
         "description": "Enable debug mode. Simulating a file upload, without actually pushing anything."
