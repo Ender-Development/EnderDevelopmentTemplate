@@ -38,4 +38,3 @@ _The major refactor_
 - remove custom plugin
 - move functionality to `build.gradle.kts`
 - updated RFG to 2.0.6
-
