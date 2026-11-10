@@ -1,3 +1,4 @@
+import org.ajoberstar.reckon.gradle.ReckonExtension
 import java.util.Properties
 
 pluginManagement {
@@ -18,7 +19,17 @@ pluginManagement {
     }
 }
 
-plugins { id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0" }
+plugins {
+    id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
+    id("org.ajoberstar.reckon.settings") version "2.0.0"
+}
+
+extensions.configure<ReckonExtension> {
+    setDefaultInferredScope("patch")
+    stages("dev", "final")
+    setScopeCalc(calcScopeFromProp()) // -Preckon.scope=minor|major
+    setStageCalc(calcStageFromProp()) // -Preckon.stage=final
+}
 
 dependencyResolutionManagement {
     versionCatalogs {
