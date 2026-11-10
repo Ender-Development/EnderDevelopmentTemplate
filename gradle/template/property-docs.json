@@ -77,7 +77,7 @@
     },
     "editorconfig": {
         "category": "\ud83d\udee0\ufe0f Utility - .editorconfig",
-        "description": "Must be on of [`roz`, `spotless`]. "
+        "description": "Must be on of [`roz`, `spotless`]."
     },
     "expandedevents_version": {
         "category": "\ud83d\udd2d Integration - Expanded Events",

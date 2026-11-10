@@ -641,7 +641,7 @@ Use this to prevent the buildscripts from overriding your `.editorconfig` file
 
 ### `editorconfig`
 
-Must be on of [`roz`, `spotless`]. 
+Must be on of [`roz`, `spotless`].
 
 - **Type:** String
 - **Required:** no
