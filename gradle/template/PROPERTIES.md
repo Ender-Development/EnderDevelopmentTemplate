@@ -42,8 +42,7 @@ Provided by the template via `gradle.properties`
 
 ### `use_betterconfig`
 
-BetterConfig extends Forge's annotation-based config system to support nested arrays, collections, arrays/collections/maps of objects, and much more. Also check
-the [Documentation](https://github.com/Meldexun/BetterConfig/blob/main/README.md)
+BetterConfig extends Forge's annotation-based config system to support nested arrays, collections, arrays/collections/maps of objects, and much more. Also check the [Documentation](https://github.com/Meldexun/BetterConfig/blob/main/README.md)
 
 - **Type:** Boolean
 - **Required:** no
@@ -115,8 +114,7 @@ Provided by the template via `gradle.properties`
 
 ### `use_expandedevents`
 
-It adds a number of new event handlers to Minecraft. Aimed at developers who want to access these methods without needing to write mixins every time.
-See [Documentation](https://github.com/Invadermonky/ExpandedEvents/wiki)
+It adds a number of new event handlers to Minecraft. Aimed at developers who want to access these methods without needing to write mixins every time. See [Documentation](https://github.com/Invadermonky/ExpandedEvents/wiki)
 
 - **Type:** Boolean
 - **Required:** no
@@ -165,6 +163,14 @@ Provided by the template via `gradle.properties`
 - **Type:** String
 - **Required:** yes
 - **Default:** none
+
+### `grs_disable_cache`
+
+Should GroovyScript cache changes to improve load time?
+
+- **Type:** Boolean
+- **Required:** no
+- **Default:** `false`
 
 ### `grs_generate_and_crash`
 
@@ -613,7 +619,7 @@ The license this project is published under.
 
 - **Type:** String
 - **Required:** no
-- **Default:** `All Rights Reserved`
+- **Default:** `All Rights Reserved`, `LGPL-3.0-only`
 
 ### `partnership`
 
@@ -719,6 +725,22 @@ Provided by the template via `gradle.properties`
 - **Required:** yes
 - **Default:** none
 
+### `greclipse_version`
+
+Provided by the template via `gradle.properties`
+
+- **Type:** String
+- **Required:** yes
+- **Default:** none
+
+### `gson_version`
+
+Provided by the template via `gradle.properties`
+
+- **Type:** String
+- **Required:** yes
+- **Default:** none
+
 ### `ktlint_version`
 
 Provided by the template via `gradle.properties`
@@ -739,8 +761,7 @@ Spotless is a code formatting plugin that can enforce a consistent code style ac
 
 ### `use_mixins`
 
-Powerful tool to do runtime description changes of classes.
-Docs: [SpongeForge Wiki](https://github.com/SpongePowered/Mixin/wiki), [MixinBooter Wiki](https://github.com/CleanroomMC/MixinBooter), [CleanroomMC Wiki](https://cleanroommc.com/wiki/forge-mod-development/mixin/preface)
+Powerful tool to do runtime description changes of classes. Docs: [SpongeForge Wiki](https://github.com/SpongePowered/Mixin/wiki), [MixinBooter Wiki](https://github.com/CleanroomMC/MixinBooter), [CleanroomMC Wiki](https://cleanroommc.com/wiki/forge-mod-development/mixin/preface)
 
 - **Type:** Evaluated String
 - **Required:** no
@@ -790,8 +811,7 @@ A refmap is a JSON that denotes mapping conversions, this JSON is generated auto
 
 ### `use_tags`
 
-A class is generated at build-time for compilation, to describe property that have values that could change at build time such as versioning. Java uses the RetroFuturaGradle implementation, while
-Kotlin uses a dynamically generated class.
+A class is generated at build-time for compilation, to describe property that have values that could change at build time such as versioning. Java uses the RetroFuturaGradle implementation, while Kotlin uses a dynamically generated class.
 
 - **Type:** Boolean
 - **Required:** no
@@ -804,14 +824,4 @@ The path where the generated Tags class will be placed. Separators should be dot
 - **Type:** Evaluated String
 - **Required:** no
 - **Default:** `${root_package}.${mod_id}.Tags`
-
-## ⚠️ Uncategorized
-
-### `gson_version`
-
-_No description yet._
-
-- **Type:** String
-- **Required:** yes
-- **Default:** none
 

@@ -1,4 +1,4 @@
-// v2.0.2
+// v2.0.3
 
 /**
  * [Universal Template for Ender-Development.org](https://github.com/Ender-Development/EnderDevelopmentTemplate)
@@ -131,7 +131,7 @@ val userName = when {
 
 val modId = getProp("mod_id").lowercase().trim().replace(" ", "_")
 val modName = getProp("mod_name")
-val modVersion = getProp("mod_version")
+val modVersion = if (isTemplateRepo) property("buildscript_version").toString() else getProp("mod_version")
 
 val modDescription = getProp("mod_description", "")
 val modAuthors = getPropList("mod_authors", ",").joinToString(", ")
@@ -186,9 +186,9 @@ val modDependencies = listOf(
     ModDependency("expanded-events", useExpandedEvents, "D#curse.maven:expanded-events-1396395:${getProp("expandedevents_version")}", availableOnModrinth = false),
 )
 
-assert(getProp("license", "All Rights Reserved").isNotEmpty())
-assert(getProp("readme", "No README provided").isNotEmpty())
-assert(getProp("partnership", "No Partnership to promote").isNotEmpty())
+val rmLicense = getProp("license", "All Rights Reserved")
+val rmContent = evalProp("readme", $$"${mod_description}")
+val rmPartnership = getProp("partnership", "")
 
 group = rootPackage
 version = modVersion
@@ -327,7 +327,7 @@ minecraft {
     username = userName
     useDependencyAccessTransformers = getProp("use_dependency_at_files", true).toBoolean()
 
-    extraRunJvmArguments.add("-ea:$group")
+    extraRunJvmArguments.add("-ea:$group.$modId")
     val args = mutableListOf<String>()
     args.add("-Dmixin.hotSwap=true")
     args.add("-Dmixin.checks.interfaces=true")
@@ -504,6 +504,10 @@ configure<SpotlessExtension> {
         properties {
             putAll(extra.properties.mapValues { evalPropValue(it.value.toString()) })
             put("repoName", repoName)
+            put("LICENSE", rmLicense)
+            put("README", rmContent)
+            put("SPONSOR", rmPartnership)
+            put("VERSION", modVersion)
         }
     }
     flexmark {
@@ -511,11 +515,21 @@ configure<SpotlessExtension> {
         flexmark(getProp("flexmark_version"))
     }
     json {
-        target("src/*/resources/**/*.json", "src/*/resources/*.info", "src/*/resources/**/*.mcmeta")
+        target("src/*/resources/**/*.json", "src/*/resources/*.info", "src/*/resources/**/*.mcmeta", "examples/**/*.json", "run/groovy/**/*.json")
         gson().indentWithSpaces(2).sortByKeys().version(getProp("gson_version"))
     }
     shell {
         target("gradlew")
+    }
+    groovy {
+        target("examples/**/*.groovy", "run/groovy/**/*.groovy")
+        importOrder()
+        removeSemicolons()
+        greclipse(getProp("greclipse_version")).configProperties(
+            "org.eclipse.jdt.core.formatter.tabulation.char=space",
+            "org.eclipse.jdt.core.formatter.tabulation.size=2",
+            "org.eclipse.jdt.core.formatter.indent_empty_lines=false",
+        )
     }
     if (editorconfig != "spotless") return@configure
     val header = $$"/*\n * Copyright (c) $YEAR $${getPropList("mod_authors", ",").first()}\n * SPDX-License-Identifier: $${getProp("license", "LGPL-3.0-only")}\n */\n\n"
@@ -586,26 +600,23 @@ fun guessIndent(): String {
     }
 }
 
-listOf("runClient", "runServer", "runObfClient", "runObfServer").forEach {
-    tasks.named<JavaExec>(it).configure {
+listOf("runClient", "runServer").forEach { task ->
+    tasks.named<JavaExec>(task).configure {
         if (isCoreMod) {
             jvmArgs("-Dfml.coreMods.load=${getProp("coremod_plugin_class_name")}")
         }
-        if (it.contains("Client") && useGroovyScript) {
-            val groovyOptions = mapOf(
+        if (task.contains("Client") && useGroovyScript) {
+            listOf(
                 getProp("grs_use_examples_folder", true) to "-Dgroovyscript.use_examples_folder=true",
                 getProp("grs_run_ls", false) to "-Dgroovyscript.run_ls=true",
                 getProp("grs_generate_examples", false) to "-Dgroovyscript.generate_examples=true",
                 getProp("grs_generate_wiki", true) to "-Dgroovyscript.generate_wiki=true",
                 getProp("grs_generate_and_crash", false) to "-Dgroovyscript.generate_and_crash=true",
                 getProp("grs_log_missing_lang_keys", true) to "-Dgroovyscript.log_missing_lang_keys=true",
-            )
-            groovyOptions.forEach { (prop, arg) ->
-                if (prop.toBoolean()) {
-                    jvmArgs(arg)
-                }
-            }
+                getProp("grs_disable_cache", false) to "-Dgroovyscript.disable_cache=true",
+            ).filter { it.first.toBoolean() }.map { it.second }.forEach { jvmArgs(it) }
         }
+        logger.lifecycle(jvmArgs.toString())
     }
 }
 
@@ -813,11 +824,12 @@ tasks.withType<Jar> {
 tasks.withType<JavaCompile> { options.encoding = "UTF-8" }
 
 /** Updated only when the remote first-line version is newer than the local one. */
-data class VersionedFile(val path: String, val headerPrefix: String)
+data class VersionedFile(val path: String, val headerPrefix: String, val headerSuffix: String = "")
 
 val versionedFiles = listOf(
     VersionedFile("build.gradle.kts", "// v"),
     VersionedFile("gradle.properties", "# v"),
+    VersionedFile("README.md", "<!-- v", " -->"),
 )
 
 class PendingUpdate(val path: String, val content: String, val reason: String)
@@ -841,10 +853,10 @@ fun listRemoteTemplateFiles(): List<String> {
         .map { it["path"] as String }
 }
 
-fun readVersion(text: String, prefix: String): List<Int>? {
+fun readVersion(text: String, prefix: String, suffix: String): List<Int>? {
     val first = text.lineSequence().firstOrNull() ?: return null
     if (!first.startsWith(prefix)) return null
-    return first.removePrefix(prefix).trim().split('.').map { it.toIntOrNull() ?: return null }
+    return first.removePrefix(prefix).removeSuffix(suffix).trim().split('.').map { it.toIntOrNull() ?: return null }
 }
 
 fun compareVersions(a: List<Int>, b: List<Int>): Int {
@@ -860,11 +872,11 @@ fun normalize(s: String) = s.replace("\r\n", "\n")
 fun collectUpdates(): List<PendingUpdate> {
     val updates = mutableListOf<PendingUpdate>()
 
-    for ((filePath, headerPrefix) in versionedFiles) {
+    for ((filePath, headerPrefix, headerSuffix) in versionedFiles) {
         val remoteText = fetchRaw(filePath)
-        val remoteVersion = readVersion(remoteText, headerPrefix) ?: continue
+        val remoteVersion = readVersion(remoteText, headerPrefix, headerSuffix) ?: continue
         val local = file(filePath)
-        val localVersion = if (local.exists()) readVersion(local.readText(), headerPrefix) else null
+        val localVersion = if (local.exists()) readVersion(local.readText(), headerPrefix, headerSuffix) else null
         if (localVersion == null || compareVersions(remoteVersion, localVersion) > 0) {
             val from = localVersion?.joinToString(".") ?: "none"
             updates += PendingUpdate(filePath, remoteText, "$from -> ${remoteVersion.joinToString(".")}")
@@ -927,11 +939,11 @@ tasks.register("updateBuildScript") {
     }
 }
 
-fun withVersionHeader(text: String, prefix: String, version: String): String {
+fun withVersionHeader(text: String, prefix: String, suffix: String, version: String): String {
     val nl = if ("\r\n" in text) "\r\n" else "\n"
     val lines = text.split(nl)
     val body = if (lines.first().startsWith(prefix)) lines.drop(1) else lines
-    return (listOf("$prefix$version") + body).joinToString(nl)
+    return (listOf("$prefix$version$suffix") + body).joinToString(nl)
 }
 
 tasks.register("syncBuildScriptVersion") {
@@ -946,13 +958,13 @@ tasks.register("syncBuildScriptVersion") {
             "buildscript_version '$version' is not a valid version (expected e.g. 1.2.3)"
         }
 
-        for ((filePath, headerPrefix) in versionedFiles) {
+        for ((filePath, headerPrefix, headerSuffix) in versionedFiles) {
             val target = file(filePath)
             val old = target.readText()
-            val new = withVersionHeader(old, headerPrefix, version)
+            val new = withVersionHeader(old, headerPrefix, headerSuffix, version)
             if (new != old) {
                 target.writeText(new)
-                logger.lifecycle("Set $filePath header to $headerPrefix$version")
+                logger.lifecycle("Set $filePath header to $headerPrefix$version$headerSuffix")
             } else {
                 logger.lifecycle("$filePath already at $version")
             }
@@ -968,6 +980,7 @@ tasks.register<TaskPublishCurseForge>("curseforge") {
     onlyIf { publishToCurseForge }
     apiToken = getPropEnv("CURSEFORGE_TOKEN")
     debugMode = getProp("curseforge_debug", false).toBoolean()
+    if (curseForgeId.isBlank()) return@register
     val uploadFile = upload(curseForgeId, tasks.reobfJar)
     uploadFile.displayName = "$modId-$version"
     uploadFile.releaseType = releaseType
@@ -993,6 +1006,7 @@ tasks.register<TaskPublishCurseForge>("curseforge") {
 modrinth {
     // [Docs](https://github.com/modrinth/minotaur)
     token = getPropEnv("MODRINTH_TOKEN")
+    if (modrinthId.isBlank() || token.toString().isBlank()) return@modrinth
     projectId = modrinthId
     versionName = "$modName v$modVersion"
     versionNumber = modVersion

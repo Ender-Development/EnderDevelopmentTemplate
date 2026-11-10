@@ -5,6 +5,15 @@ Writing a changelog is a good practice for maintaining a clear history of change
 Try to follow the [Common Changelog](https://common-changelog.org/) conventions.
 -->
 
+## [2.0.3] - 2026-11-10
+
+_Getting Groovy_
+
+- add formatting for Groovy(Script) files
+- fix GroovyScript jvmArg not getting applied
+- README.md will now get updated with buildscripts
+- template version becomes project version in template repo
+
 ## [2.0.2] - 2026-11-09
 
 _Java Auto Import_

@@ -115,9 +115,17 @@
         "category": "\ud83d\udea7 Internal",
         "description": "Provided by the template via `gradle.properties`"
     },
+    "greclipse_version": {
+        "category": "\ud83d\udee0\ufe0f Utility - Formatting",
+        "description": "Provided by the template via `gradle.properties`"
+    },
     "groovyscript_version": {
         "category": "\ud83d\udd2d Integration - GroovyScript",
         "description": "Provided by the template via `gradle.properties`"
+    },
+    "grs_disable_cache": {
+        "category": "\ud83d\udd2d Integration - GroovyScript",
+        "description": "Should GroovyScript cache changes to improve load time?"
     },
     "grs_generate_and_crash": {
         "category": "\ud83d\udd2d Integration - GroovyScript",
@@ -144,8 +152,8 @@
         "description": "Instead of using the GroovyScript folder in run/groovyscript, use the 'examples' folder instead."
     },
     "gson_version": {
-        "category": "",
-        "description": ""
+        "category": "\ud83d\udee0\ufe0f Utility - Formatting",
+        "description": "Provided by the template via `gradle.properties`"
     },
     "hei_version": {
         "category": "\ud83d\udd2d Integration - Had Enough Items",
