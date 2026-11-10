@@ -545,6 +545,7 @@ configure<SpotlessExtension> {
         val yLast = git("log", "-1", "--format=%as").split("-").first()
         return if (yFrom == yLast) yFrom else "$yFrom-$yLast"
     }
+
     val header = $$"/*\n * Copyright (c) $${cSpan()} $${getPropList("mod_authors", ",").first()}\n * SPDX-License-Identifier: $${getProp("license", "LGPL-3.0-only")}\n */\n\n"
     java {
         target("src/main/java/**/*.java")
@@ -989,7 +990,7 @@ tasks.register<TaskPublishCurseForge>("curseforge") {
     // [Docs](https://github.com/Darkhax/CurseForgeGradle)
     group = "publishing"
     description = "Upload project to CurseForge"
-    dependsOn(tasks.reobfJar)
+    dependsOn(tasks.reobfJar, "verifyPushed")
     onlyIf { publishToCurseForge }
     apiToken = getPropEnv("CURSEFORGE_TOKEN")
     debugMode = getProp("curseforge_debug", false).toBoolean()
@@ -1051,7 +1052,7 @@ modrinth {
     }
 }
 tasks.modrinth {
-    dependsOn(tasks.modrinthSyncBody)
+    dependsOn(tasks.modrinthSyncBody, "verifyPushed")
     onlyIf { publishToModrinth && getProp("modrinth_sync_readme", true).toBoolean() }
 }
 
@@ -1261,15 +1262,31 @@ tasks.register("verifyRelease") {
         check('-' !in v) { "Not a release version ($v). Run with -Preckon.stage=final" }
     }
 }
+tasks.register("tagRelease") {
+    group = "release"
+    description = "Builds, patches the changelog, commits and tags locally (nothing is pushed)"
+    notCompatibleWithConfigurationCache("runs git")
+    dependsOn("verifyRelease", tasks.build, "collectCommits", tasks.patchChangelog)
+    val v = modVersion
+    doLast {
+        git("add", "CHANGELOG.md")
+        git("commit", "-m", "Release $v")
+        git("tag", "-a", v, "-m", "Release $v")
+    }
+}
 tasks.register("collectCommits") {
     group = "release"
     description = "Adds commits since the last tag to [Unreleased], grouped by prefix"
+    mustRunAfter(tasks.build)
     notCompatibleWithConfigurationCache("runs git")
     dependsOn("verifyRelease")
     doLast {
+        // commits since last version tag
         val lastTag = runCatching { git("describe", "--tags", "--abbrev=0", "--match", "[0-9]*") }.getOrNull()
         val range = if (lastTag != null) "$lastTag..HEAD" else "HEAD"
         val subjects = git("log", range, "--no-merges", "--pretty=format:%s").lines().filter { it.isNotBlank() && !it.startsWith("Release ") }
+
+        // classify: "fix: x" -> Bugfixes, "misc: x" -> Miscellaneous, else Changes
         val prefix = Regex("^(fix|misc)\\s*:\\s*(.+)$", RegexOption.IGNORE_CASE)
         val newEntries: List<Pair<String, String>> = subjects.map { s ->
             val m = prefix.find(s)
@@ -1279,11 +1296,15 @@ tasks.register("collectCommits") {
                 "Changes" to s.trim()
             }
         }
+
+        // locate [Unreleased] section
         val lines = changelogFile.readLines()
         val start = lines.indexOfFirst { it.trim().startsWith("## [Unreleased]") }
         require(start >= 0) { "No '## [Unreleased]' section in CHANGELOG.md" }
-        val linkRef = Regex("^\\[[^]]+]:\\s")
+        val linkRef = Regex("^\\[[^\\]]+\\]:\\s")
         val end = (start + 1 until lines.size).firstOrNull { lines[it].startsWith("## ") || linkRef.containsMatchIn(lines[it]) } ?: lines.size
+
+        // parse existing entries
         val grouped = linkedMapOf<String, MutableList<String>>()
         changelogGroups.forEach { grouped[it] = mutableListOf() }
         var current = "Changes"
@@ -1307,6 +1328,8 @@ tasks.register("collectCommits") {
                 }
             }
         }
+
+        // merge, skipping anything already present
         var added = 0
         for ((group, text) in newEntries) {
             if (grouped.values.none { text in it }) {
@@ -1318,6 +1341,8 @@ tasks.register("collectCommits") {
             logger.lifecycle("No new changelog entries")
             return@doLast
         }
+
+        // render in fixed group order, empty groups omitted
         val body = buildList {
             add("")
             grouped.filterValues { it.isNotEmpty() }.forEach { (g, items) ->
@@ -1331,19 +1356,38 @@ tasks.register("collectCommits") {
         logger.lifecycle("Added $added changelog entries")
     }
 }
+tasks.withType<PublishToMavenRepository>().configureEach { dependsOn("verifyPushed") }
 tasks.patchChangelog {
     mustRunAfter("collectCommits")
 }
-tasks.register("release") {
+tasks.register("verifyPushed") {
     group = "release"
-    description = "Changelog -> commit -> tag -> push. Run with -Preckon.stage=final"
+    description = "Fails unless the release tag exists on origin and points at HEAD"
     notCompatibleWithConfigurationCache("runs git")
-    dependsOn("verifyRelease", "collectCommits", tasks.patchChangelog)
+    mustRunAfter("pushRelease")
     val v = modVersion
     doLast {
-        git("add", "CHANGELOG.md")
-        git("commit", "-m", "Release $v")
-        git("tag", "-a", v, "-m", "Release $v")
-        git("push", "--follow-tags")
+        check('-' !in v) { "Not a release version ($v), refusing to publish" }
+        val head = git("rev-parse", "HEAD")
+        val remoteShas = git("ls-remote", "--tags", "origin")
+            .lines()
+            .map { it.split('\t') }
+            .filter { it.size == 2 && (it[1] == "refs/tags/$v^{}" || it[1] == "refs/tags/$v") }
+            .map { it[0] }
+        check(head in remoteShas) {
+            "Tag $v is not on origin at HEAD ($head). Push it first; nothing was published."
+        }
     }
+}
+tasks.register("pushRelease") {
+    group = "release"
+    description = "Atomically pushes the release commit and tag"
+    notCompatibleWithConfigurationCache("runs git")
+    dependsOn("tagRelease")
+    doLast { git("push", "--atomic", "origin", "HEAD", "refs/tags/$modVersion") }
+}
+tasks.register("releaseAndPublish") {
+    group = "release"
+    description = "release, then publish. Run with -Preckon.stage=final"
+    dependsOn("pushRelease", tasks.publish)
 }
