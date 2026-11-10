@@ -5,6 +5,8 @@ Writing a changelog is a good practice for maintaining a clear history of change
 Try to follow the [Common Changelog](https://common-changelog.org/) conventions.
 -->
 
+## [Unreleased]
+
 ## [2.0.3] - 2026-11-10
 
 _Getting Groovy_

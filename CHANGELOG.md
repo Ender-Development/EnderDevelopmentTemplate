@@ -5,6 +5,8 @@ Writing a changelog is a good practice for maintaining a clear history of change
 Try to follow the [Common Changelog](https://common-changelog.org/) conventions.
 -->
 
+## [Unreleased]
+
 ## [0.1.0] - 20XX-XX-XX
 
 _Initial release._
