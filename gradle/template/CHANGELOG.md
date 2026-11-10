@@ -7,6 +7,36 @@ Try to follow the [Common Changelog](https://common-changelog.org/) conventions.
 
 ## [Unreleased]
 
+### Changes
+
+### Bugfixes
+
+### Miscellaneous
+
+## [2.0.4] - 2026-11-11
+
+### Changes
+
+- work on automated changelog generation
+- update build.gradle.kts to use tag based versioning
+- add kotlin reference object to .gitignore
+- remove Kotlin reference object
+- add unreleased section to changelog
+- remove trailing whitespace from prop doc string
+- remove mod_version property
+- add recon for tag based versioning
+
+### Bugfixes
+
+- hardcoded changelog path
+- path for jetbrains changelog plugin
+- maven url in README.md
+
+### Miscellaneous
+
+- reinforce markdown formatting
+- hide gradle deprecation warning
+
 ## [2.0.3] - 2026-11-10
 
 _Getting Groovy_
@@ -38,3 +68,10 @@ _The major refactor_
 - remove custom plugin
 - move functionality to `build.gradle.kts`
 - updated RFG to 2.0.6
+
+[Unreleased]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.0.4...HEAD
+[2.0.4]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.0.3...2.0.4
+[2.0.3]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.0.2...2.0.3
+[2.0.2]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.0.1...2.0.2
+[2.0.1]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.0.0...2.0.1
+[2.0.0]: https://github.com/Ender-Development/EnderDevelopmentTemplate/commits/2.0.0
