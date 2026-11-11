@@ -1,4 +1,4 @@
-// v2.0.5
+// v2.0.6
 
 /**
  * [Universal Template for Ender-Development.org](https://github.com/Ender-Development/EnderDevelopmentTemplate)
