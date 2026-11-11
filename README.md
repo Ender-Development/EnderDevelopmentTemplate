@@ -1,4 +1,4 @@
-<!-- v2.1.2 -->
+<!-- v2.1.3 -->
 <!---freshmark header
 output = [
 	'#',
@@ -22,7 +22,7 @@ link(shield("License", "License", "{{LICENSE}}", "blue"), "{{mod_url}}/blob/mast
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.4.20-blue.svg)](https://kotlinlang.org/)
 [![Java](https://img.shields.io/badge/Java-25.0.5-blue.svg)](https://www.azul.com/downloads/?version=java-25-lts&package=jdk#zulu)
 [![Maven artifact](https://img.shields.io/badge/Maven-org.ender__development%3Atemplate__mod-blue.svg)](https://maven.ender-development.org/org/ender_development/template_mod/)
-[![Version](https://img.shields.io/badge/Version-2.1.2-blue.svg)](https://github.com/Ender-Development/EnderDevelopmentTemplate/tags)
+[![Version](https://img.shields.io/badge/Version-2.1.3-blue.svg)](https://github.com/Ender-Development/EnderDevelopmentTemplate/tags)
 [![License](https://img.shields.io/badge/License-LGPL--3.0--only-blue.svg)](https://github.com/Ender-Development/EnderDevelopmentTemplate/blob/master/LICENSE)
 
 > Universal Java / Kotlin Template for Minecraft 1.12 utilizing the latest tooling. If you have further questions, feel free to reach out to us.

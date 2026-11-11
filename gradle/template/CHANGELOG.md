@@ -13,6 +13,18 @@ Try to follow the [Common Changelog](https://common-changelog.org/) conventions.
 
 ### Miscellaneous
 
+## [2.1.3] - 2026-11-11
+
+### Changes
+
+- simplify template check
+- add grs example JSONs to .gitignore
+- comment out Tag code, class doesn't generate when using kotlin as language
+
+### Miscellaneous
+
+- apply spotless
+
 ## [2.1.2] - 2026-11-11
 
 ### Bugfixes
@@ -166,7 +178,8 @@ _The major refactor_
 - move functionality to `build.gradle.kts`
 - updated RFG to 2.0.6
 
-[Unreleased]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.1.2...HEAD
+[Unreleased]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.1.3...HEAD
+[2.1.3]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.1.2...2.1.3
 [2.1.2]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.1.1...2.1.2
 [2.1.1]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.1.0...2.1.1
 [2.1.0]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.0.9...2.1.0
