@@ -965,7 +965,7 @@ tasks.register("syncBuildScriptVersion") {
     description = "Writes the buildscript_version property into the version header of the versioned files"
 
     onlyIf { isTemplateRepo }
-
+    mustRunAfter("verifyRelease")
     doLast {
         require(Regex("""\d+(\.\d+)*""").matches(releaseVersion)) {
             "buildscript_version '$releaseVersion' is not a valid version (expected e.g. 1.2.3)"
