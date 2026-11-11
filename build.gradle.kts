@@ -1269,12 +1269,16 @@ tasks.register("verifyRelease") {
         check('-' !in modVersion) { "Not a release version ($modVersion). Run with -Preckon.stage=final" }
     }
 }
+tasks.register("prepareRelease") {
+    group = "release"
+    description = "Prepares the final changes, updates version references etc."
+    dependsOn("verifyRelease", tasks.build, "collectCommits", tasks.patchChangelog, "syncBuildScriptVersion")
+}
 tasks.register("tagRelease") {
     group = "release"
     description = "Builds, patches the changelog, commits and tags locally (nothing is pushed)"
     notCompatibleWithConfigurationCache("runs git")
-    dependsOn("verifyRelease", tasks.build, "collectCommits", tasks.patchChangelog, "syncBuildScriptVersion", tasks.spotlessApply)
-    val v = modVersion
+    dependsOn("prepareRelease", tasks.spotlessApply)
     doLast {
         if (isTemplateRepo) {
             git("add", "README.md")
