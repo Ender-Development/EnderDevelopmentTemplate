@@ -1482,7 +1482,7 @@ tasks.register("tagRelease") {
             versionedFiles.forEach { git("add", file(it.path).canonicalPath) }
         }
         git("add", changelogFile.canonicalPath)
-        git("commit", "-m", "Release $commitMsg")
+        git("commit", "-m", commitMsg)
         git("tag", "-a", modVersion, "-m", changelog.renderItem(changelog.get(modVersion), Changelog.OutputType.PLAIN_TEXT))
     }
 }
