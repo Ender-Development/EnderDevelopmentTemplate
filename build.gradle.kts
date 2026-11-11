@@ -1374,7 +1374,10 @@ tasks.register("collectCommits") {
         logger.lifecycle("Added $added changelog entries")
     }
 }
-tasks.withType<PublishToMavenRepository>().configureEach { dependsOn("verifyPushed") }
+tasks.withType<PublishToMavenRepository>().configureEach {
+    dependsOn("verifyPushed")
+    onlyIf { !isTemplateRepo }
+}
 tasks.register("verifyPushed") {
     group = "release"
     description = "Fails unless the release tag exists on remote and points at HEAD"
