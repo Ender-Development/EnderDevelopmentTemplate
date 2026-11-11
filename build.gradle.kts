@@ -1,4 +1,4 @@
-// v2.0.4
+// v2.0.5
 
 /**
  * [Universal Template for Ender-Development.org](https://github.com/Ender-Development/EnderDevelopmentTemplate)
@@ -1233,7 +1233,6 @@ tasks.register("generatePropertyDocs") {
             logger.lifecycle("Fill in their category and description, then run this task again.")
         }
         logger.lifecycle("Wrote ${propDocFile.name} (${usages.size} properties).")
-        tasks.spotlessApply
     }
 }
 
@@ -1269,11 +1268,15 @@ tasks.register("verifyRelease") {
         check('-' !in modVersion) { "Not a release version ($modVersion). Run with -Preckon.stage=final" }
     }
 }
+tasks.named("collectCommits") { mustRunAfter("verifyRelease") }
+tasks.patchChangelog { mustRunAfter("collectCommits") }
+tasks.named("syncBuildScriptVersion") { mustRunAfter(tasks.patchChangelog) }
+tasks.spotlessApply { mustRunAfter("syncBuildScriptVersion") }
+tasks.build { mustRunAfter(tasks.spotlessApply) }
 tasks.register("prepareRelease") {
     group = "release"
     description = "Prepares the final changes, updates version references etc."
-    dependsOn("verifyRelease")
-    finalizedBy(tasks.build, "collectCommits", tasks.patchChangelog, "syncBuildScriptVersion", tasks.spotlessApply)
+    dependsOn("verifyRelease", "collectCommits", tasks.patchChangelog, "syncBuildScriptVersion", tasks.spotlessApply, tasks.build)
 }
 tasks.register("tagRelease") {
     group = "release"
@@ -1282,8 +1285,7 @@ tasks.register("tagRelease") {
     dependsOn("prepareRelease")
     doLast {
         if (isTemplateRepo) {
-            git("add", "README.md")
-            git("add", "build.gradle.kts")
+            versionedFiles.forEach { git("add", file(it.path).canonicalPath) }
         }
         git("add", changelogFile.canonicalPath)
         git("commit", "-m", "Release $modVersion")
@@ -1293,9 +1295,7 @@ tasks.register("tagRelease") {
 tasks.register("collectCommits") {
     group = "release"
     description = "Adds commits since the last tag to [Unreleased], grouped by prefix"
-    mustRunAfter(tasks.build)
     notCompatibleWithConfigurationCache("runs git")
-    dependsOn("verifyRelease")
     doLast {
         // commits since last version tag
         val lastTag = runCatching { git("describe", "--tags", "--abbrev=0", "--match", "[0-9]*") }.getOrNull()
@@ -1373,9 +1373,6 @@ tasks.register("collectCommits") {
     }
 }
 tasks.withType<PublishToMavenRepository>().configureEach { dependsOn("verifyPushed") }
-tasks.patchChangelog {
-    mustRunAfter("collectCommits")
-}
 tasks.register("verifyPushed") {
     group = "release"
     description = "Fails unless the release tag exists on origin and points at HEAD"
@@ -1401,7 +1398,7 @@ tasks.register("pushRelease") {
     notCompatibleWithConfigurationCache("runs git")
     dependsOn("tagRelease")
     doLast {
-        git("remotes").split("\n").forEach { git("push", "--atomic", it, "HEAD", "refs/tags/$modVersion") }
+        git("remote").split("\n").forEach { git("push", "--atomic", it, "HEAD", "refs/tags/$modVersion") }
     }
 }
 tasks.register("releaseAndPublish") {
