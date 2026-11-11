@@ -147,6 +147,7 @@ $RECYCLE.BIN/
 
 # ---- 6. GroovyScript ----------------------------------------------------------------
 
+examples/*.json
 examples/assets/*
 examples/**/postInit/main.groovy
 examples/**/generated/*
