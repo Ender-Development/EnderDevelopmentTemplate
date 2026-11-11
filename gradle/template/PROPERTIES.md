@@ -278,14 +278,6 @@ Provided by the template via `gradle.properties`
 
 ## 🚧 Internal
 
-### `buildscript_version`
-
-Provided by the template via `gradle.properties`. Used to allow buildscript updates via task.
-
-- **Type:** String
-- **Required:** yes
-- **Default:** none
-
 ### `gradle_version`
 
 Provided by the template via `gradle.properties`

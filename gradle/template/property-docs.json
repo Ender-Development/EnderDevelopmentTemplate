@@ -35,10 +35,6 @@
         "category": "\ud83d\udd2d Integration - Better Config",
         "description": "Provided by the template via `gradle.properties`"
     },
-    "buildscript_version": {
-        "category": "\ud83d\udea7 Internal",
-        "description": "Provided by the template via `gradle.properties`. Used to allow buildscript updates via task."
-    },
     "catalyx_version": {
         "category": "\ud83d\udd2d Integration - Catalyx",
         "description": "Provided by the template via `gradle.properties`"
