@@ -1304,7 +1304,7 @@ tasks.register("tagRelease") {
         val commitMsg = buildString {
             appendLine("Release $modVersion")
             appendLine("Diff: $diffLink")
-            appendLine(git("log", "-1", "--format='%n%nSigned-off-by: %an <%ae>'"))
+            appendLine(git("log", "-1", "--format='Signed-off-by: %an <%ae>'").removeSurrounding("'"))
         }
         if (isTemplateRepo) {
             versionedFiles.forEach { git("add", file(it.path).canonicalPath) }
@@ -1404,7 +1404,6 @@ tasks.register("verifyPushed") {
     description = "Fails unless the release tag exists on remote and points at HEAD"
     notCompatibleWithConfigurationCache("runs git")
     mustRunAfter("pushRelease")
-    val v = modVersion
     doLast {
         check('-' !in modVersion) { "Not a release version ($modVersion), refusing to publish" }
         val head = git("rev-parse", "HEAD")
@@ -1414,7 +1413,7 @@ tasks.register("verifyPushed") {
                 .map { it.split('\t') }
                 .filter { it.size == 2 && (it[1] == "refs/tags/$modVersion^{}" || it[1] == "refs/tags/$modVersion") }
                 .map { it[0] }
-            check(head in remoteShas) { "Tag $v is not on $remote at HEAD ($head). Push it first; nothing was published." }
+            check(head in remoteShas) { "Tag $modVersion is not on $remote at HEAD ($head). Push it first; nothing was published." }
         }
     }
 }
