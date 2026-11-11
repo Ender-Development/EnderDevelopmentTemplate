@@ -10,20 +10,20 @@ output = [
 <!---freshmark /header -->
 <!---freshmark shields
 output = [
-link(shield("Kotlin", "Kotlin", "{{kotlin_version}}", "blue"), "https://kotlinlang.org/"),
-link(shield("Java", "Java", "{{java_version}}", "blue"), "https://www.azul.com/downloads/?version=java-25-lts&package=jdk#zulu"),
-link(shield("Maven artifact", "Maven", "{{root_package}}:{{mod_id}}", "blue"), "{{mavenUrl}}/" + "{{root_package}}/{{mod_id}}/".replaceAll("\\.", "/")),
-link(shield("Version", "Version", "{{VERSION}}", "blue"), "{{mod_url}}/tags"),
-link(shield("License", "License", "{{LICENSE}}", "blue"), "{{mod_url}}/blob/master/LICENSE"),
+link(shield("Kotlin", "Kotlin", "{{kotlin_version}}", "blue").replace("-blue.svg", "-blue?logo=kotlin"), "https://kotlinlang.org/"),
+link(shield("Java", "Java", "{{java_version}}", "blue").replace("-blue.svg", "-blue?logo=openjdk"), "https://www.azul.com/downloads/?version=java-25-lts&package=jdk#zulu"),
+link(shield("Maven artifact", "Maven", "{{root_package}}:{{mod_id}}", "blue").replace("-blue.svg", "-blue?logo=apachemaven"), "{{mavenUrl}}/" + "{{root_package}}/{{mod_id}}/".replaceAll("\\.", "/") + "{{VERSION}}/"),
+link(shield("Version", "Version", "{{VERSION}}", "blue").replace("-blue.svg", "-blue?logo=semver"), "{{mod_url}}/releases/tag/{{VERSION}}"),
+link(shield("License", "License", "{{LICENSE}}", "blue").replace("-blue.svg", "-blue?logo=spdx"), "{{mod_url}}/blob/master/LICENSE"),
 "",
 "> {{mod_description}}"
 ].join("\n")
 -->
-[![Kotlin](https://img.shields.io/badge/Kotlin-2.4.20-blue.svg)](https://kotlinlang.org/)
-[![Java](https://img.shields.io/badge/Java-25.0.5-blue.svg)](https://www.azul.com/downloads/?version=java-25-lts&package=jdk#zulu)
-[![Maven artifact](https://img.shields.io/badge/Maven-org.ender__development%3Atemplate__mod-blue.svg)](https://maven.ender-development.org/org/ender_development/template_mod/)
-[![Version](https://img.shields.io/badge/Version-2.1.3-blue.svg)](https://github.com/Ender-Development/EnderDevelopmentTemplate/tags)
-[![License](https://img.shields.io/badge/License-LGPL--3.0--only-blue.svg)](https://github.com/Ender-Development/EnderDevelopmentTemplate/blob/master/LICENSE)
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.4.20-blue?logo=kotlin)](https://kotlinlang.org/)
+[![Java](https://img.shields.io/badge/Java-25.0.5-blue?logo=openjdk)](https://www.azul.com/downloads/?version=java-25-lts&package=jdk#zulu)
+[![Maven artifact](https://img.shields.io/badge/Maven-org.ender__development%3Atemplate__mod-blue?logo=apachemaven)](https://maven.ender-development.org/org/ender_development/template_mod/2.1.3/)
+[![Version](https://img.shields.io/badge/Version-2.1.3-blue?logo=semver)](https://github.com/Ender-Development/EnderDevelopmentTemplate/releases/tag/2.1.3)
+[![License](https://img.shields.io/badge/License-LGPL--3.0--only-blue?logo=spdx)](https://github.com/Ender-Development/EnderDevelopmentTemplate/blob/master/LICENSE)
 
 > Universal Java / Kotlin Template for Minecraft 1.12 utilizing the latest tooling. If you have further questions, feel free to reach out to us.
 <!---freshmark /shields -->
