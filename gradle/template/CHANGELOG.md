@@ -13,6 +13,17 @@ Try to follow the [Common Changelog](https://common-changelog.org/) conventions.
 
 ### Miscellaneous
 
+## [2.0.7] - 2026-11-11
+
+### Changes
+
+- refactor idea tasks
+- disable maven publishing in template
+
+### Bugfixes
+
+- instead of hardcoding 'origin' as remote iterate through all
+
 ## [2.0.6] - 2026-11-11
 
 ### Changes
@@ -98,7 +109,8 @@ _The major refactor_
 - move functionality to `build.gradle.kts`
 - updated RFG to 2.0.6
 
-[Unreleased]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.0.6...HEAD
+[Unreleased]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.0.7...HEAD
+[2.0.7]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.0.6...2.0.7
 [2.0.6]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.0.5...2.0.6
 [2.0.5]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.0.4...2.0.5
 [2.0.4]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.0.3...2.0.4
