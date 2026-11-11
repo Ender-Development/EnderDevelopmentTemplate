@@ -42,6 +42,7 @@ plugins {
     kotlin("plugin.serialization") version libs.versions.kotlinVersion
     // formatting
     id("com.diffplug.spotless") version libs.versions.spotlessVersion
+    id("zone.rong.clearskies") version libs.versions.clearskiesVersion
     // publishing
     id("org.jetbrains.changelog") version libs.versions.jetbrainsChangelogVersion
     id("net.darkhax.curseforgegradle") version libs.versions.curseforgegradleVersion
@@ -208,6 +209,10 @@ buildscript {
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:${property("kotlin_version")}")
         classpath("org.jetbrains.kotlinx:kotlinx-serialization-json:${property("kotlinx_serialization_version")}")
     }
+}
+
+clearSkies {
+    include("${rootPackage.replace(".", "/")}/**")
 }
 
 configurations {
