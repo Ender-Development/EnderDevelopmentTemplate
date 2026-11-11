@@ -487,7 +487,8 @@ repositories {
 configure<SpotlessExtension> {
     encoding("UTF-8")
     format("misc") {
-        target(".gitignore", ".gitattributes", "LICENSE")
+        target(".gitignore", ".gitattributes")
+        replaceRegex("collapse blank lines", "\\n{3,}", "\n\n")
         trimTrailingWhitespace()
         endWithNewline()
     }
@@ -847,12 +848,14 @@ tasks.withType<Jar> {
 tasks.withType<JavaCompile> { options.encoding = "UTF-8" }
 
 /** Updated only when the remote first-line version is newer than the local one. */
-data class VersionedFile(val path: String, val headerPrefix: String, val headerSuffix: String = "")
+data class VersionedFile(val path: String, val headerPrefix: String, val headerSuffix: String = "", val userSectionMarker: String? = null)
 
 val versionedFiles = listOf(
     VersionedFile("build.gradle.kts", "// v"),
     VersionedFile("gradle.properties", "# v"),
     VersionedFile("README.md", "<!-- v", " -->"),
+    VersionedFile(".gitignore", "# v", userSectionMarker = "# ---- USER SECTION"),
+    VersionedFile(".gitattributes", "# v", userSectionMarker = "# ---- USER SECTION"),
 )
 
 class PendingUpdate(val path: String, val content: String, val reason: String)
@@ -895,14 +898,17 @@ fun normalize(s: String) = s.replace("\r\n", "\n")
 fun collectUpdates(): List<PendingUpdate> {
     val updates = mutableListOf<PendingUpdate>()
 
-    for ((filePath, headerPrefix, headerSuffix) in versionedFiles) {
-        val remoteText = fetchRaw(filePath)
-        val remoteVersion = readVersion(remoteText, headerPrefix, headerSuffix) ?: continue
-        val local = file(filePath)
-        val localVersion = if (local.exists()) readVersion(local.readText(), headerPrefix, headerSuffix) else null
+    versionedFiles.forEach { versionedFile ->
+        val remoteText = fetchRaw(versionedFile.path)
+        val remoteVersion = readVersion(remoteText, versionedFile.headerPrefix, versionedFile.headerSuffix) ?: return@forEach
+        val local = file(versionedFile.path)
+        val localVersion = if (local.exists()) readVersion(local.readText(), versionedFile.headerPrefix, versionedFile.headerSuffix) else null
         if (localVersion == null || compareVersions(remoteVersion, localVersion) > 0) {
+            val content = versionedFile.userSectionMarker
+                ?.let { mergeUserSection(remoteText, if (local.exists()) local.readText() else null, it) }
+                ?: remoteText
             val from = localVersion?.joinToString(".") ?: "none"
-            updates += PendingUpdate(filePath, remoteText, "$from -> ${remoteVersion.joinToString(".")}")
+            updates += PendingUpdate(versionedFile.path, content, "$from -> ${remoteVersion.joinToString(".")}")
         }
     }
 
@@ -916,6 +922,24 @@ fun collectUpdates(): List<PendingUpdate> {
         }
     }
     return updates
+}
+
+fun mergeUserSection(remote: String, local: String?, markerPrefix: String): String {
+    val remoteLines = remote.lines()
+    val remoteMarker = remoteLines.indexOfFirst { it.startsWith(markerPrefix) }
+    if (remoteMarker < 0) return remote // upstream has no marker, nothing to preserve
+
+    val managed = remoteLines.subList(0, remoteMarker + 1)
+    val localLines = local?.lines().orEmpty()
+    val localMarker = localLines.indexOfFirst { it.startsWith(markerPrefix) }
+
+    val userPart = if (localMarker >= 0) {
+        localLines.subList(localMarker + 1, localLines.size)
+    } else {
+        val known = remoteLines.map { it.trim() }.toSet()
+        listOf("") + localLines.filter { it.isNotBlank() && it.trim() !in known && !it.startsWith("#") }
+    }
+    return (managed + userPart).joinToString("\n").trimEnd() + "\n"
 }
 
 tasks.register("checkBuildScriptUpdate") {
@@ -980,15 +1004,15 @@ tasks.register("syncBuildScriptVersion") {
             "buildscript_version '$modVersion' is not a valid version (expected e.g. 1.2.3)"
         }
 
-        for ((filePath, headerPrefix, headerSuffix) in versionedFiles) {
-            val target = file(filePath)
+        versionedFiles.forEach {
+            val target = file(it.path)
             val old = target.readText()
-            val new = withVersionHeader(old, headerPrefix, headerSuffix, modVersion)
+            val new = withVersionHeader(old, it.headerPrefix, it.headerSuffix, modVersion)
             if (new != old) {
                 target.writeText(new)
-                logger.lifecycle("Set $filePath header to $headerPrefix$modVersion$headerSuffix")
+                logger.lifecycle("Set ${it.path} header to ${it.headerPrefix}$modVersion${it.headerSuffix}")
             } else {
-                logger.lifecycle("$filePath already at $modVersion")
+                logger.lifecycle("${it.path} already at $modVersion")
             }
         }
     }
