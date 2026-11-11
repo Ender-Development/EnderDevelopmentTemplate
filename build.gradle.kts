@@ -26,7 +26,6 @@
 
 import com.diffplug.gradle.spotless.SpotlessExtension
 import com.diffplug.gradle.spotless.SpotlessTask
-import com.gtnewhorizons.retrofuturagradle.fg12shadow.org.eclipse.jgit.storage.file.FileRepositoryBuilder
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 import groovy.lang.GroovyShell
@@ -79,17 +78,6 @@ data class ModDependency(
     val availableOnModrinth: Boolean = true,
     val optional: Boolean = false,
 )
-
-fun isTemplate(): Boolean {
-    val repo =
-        FileRepositoryBuilder()
-            .setGitDir(File(".git"))
-            .readEnvironment()
-            .findGitDir()
-            .build()
-    val remoteUrl = repo.config.getString("remote", "github", "url")
-    return remoteUrl.contains(repoName)
-}
 
 fun getMarkdownChangelog(): String {
     if (!file("CHANGELOG.md").exists()) throw GradleException("CHANGELOG.md does not exist!")
@@ -160,7 +148,7 @@ fun evalPropValue(value: String): String {
     return shell(value)
 }
 
-val isTemplateRepo = isTemplate()
+val isTemplateRepo = git("remote").split("\n").any { git("remote", "get-url", it).contains(repoName) }
 val versionGradle = getProp("gradle_version")
 val kotlinVersion = getProp("kotlin_version")
 val useKotlin = getProp("use_kotlin", false).toBoolean()
