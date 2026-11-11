@@ -1527,7 +1527,7 @@ tasks.register("collectCommits") {
                 }
 
                 line.isBlank() -> {
-                    Unit
+                    continue
                 }
 
                 line.startsWith("- ") || line.startsWith("* ") -> {
