@@ -1,11 +1,5 @@
 // v2.0.9
 
-/**
- * [Universal Template for Ender-Development.org](https://github.com/Ender-Development/EnderDevelopmentTemplate)
- * It is advised that you do NOT edit anything in the build.gradle.kts; unless you are sure of what you are doing.
- * EDITS WILL BE OVERWRITTEN, WHEN UPDATING THE BUILDSCRIPTS!
- */
-
 import com.diffplug.gradle.spotless.SpotlessExtension
 import com.diffplug.gradle.spotless.SpotlessTask
 import com.gtnewhorizons.retrofuturagradle.fg12shadow.org.eclipse.jgit.storage.file.FileRepositoryBuilder
@@ -53,10 +47,22 @@ val repoName = "Ender-Development/EnderDevelopmentTemplate"
 val updateBranch = "master"
 val templateDir = "gradle/template"
 
-data class ModDependency(val identifier: String, val flag: Boolean, val dep: String, val availableOnCurseForge: Boolean = true, val availableOnModrinth: Boolean = true, val optional: Boolean = false)
+data class ModDependency(
+    val identifier: String,
+    val flag: Boolean,
+    val dep: String,
+    val availableOnCurseForge: Boolean = true,
+    val availableOnModrinth: Boolean = true,
+    val optional: Boolean = false,
+)
 
 fun isTemplate(): Boolean {
-    val repo = FileRepositoryBuilder().setGitDir(File(".git")).readEnvironment().findGitDir().build()
+    val repo =
+        FileRepositoryBuilder()
+            .setGitDir(File(".git"))
+            .readEnvironment()
+            .findGitDir()
+            .build()
     val remoteUrl = repo.config.getString("remote", "github", "url")
     return remoteUrl.contains(repoName)
 }
@@ -68,28 +74,40 @@ fun getMarkdownChangelog(): String {
     return log
 }
 
-fun loadProps(filename: String): Properties = Properties().apply {
-    val file = file(filename)
-    if (file.exists()) {
-        return@apply file(filename).inputStream().use { load(it) }
+fun loadProps(filename: String): Properties =
+    Properties().apply {
+        val file = file(filename)
+        if (file.exists()) {
+            return@apply file(filename).inputStream().use { load(it) }
+        }
+        throw GradleException("File $filename doesn't exist!")
     }
-    throw GradleException("File $filename doesn't exist!")
-}
 
-fun getProp(name: String, default: Any? = null): String = extra.takeIf { it.has(name) }?.get(name)?.toString()
-    ?: findProperty(name)?.toString()
-    ?: default?.toString()
-    ?: throw GradleException("Property $name needs to be specified!")
+fun getProp(
+    name: String,
+    default: Any? = null,
+): String =
+    extra.takeIf { it.has(name) }?.get(name)?.toString()
+        ?: findProperty(name)?.toString()
+        ?: default?.toString()
+        ?: throw GradleException("Property $name needs to be specified!")
 
-fun getPropList(name: String, delimiter: String = " "): MutableList<String> = try {
-    getProp(name).split(delimiter).filter { it.isNotEmpty() }.toMutableList()
-} catch (_: GradleException) {
-    mutableListOf()
-}
+fun getPropList(
+    name: String,
+    delimiter: String = " ",
+): MutableList<String> =
+    try {
+        getProp(name).split(delimiter).filter { it.isNotEmpty() }.toMutableList()
+    } catch (_: GradleException) {
+        mutableListOf()
+    }
 
 fun getPropEnv(name: String): String = System.getenv(name) ?: getProp(name, "")
 
-fun evalProp(name: String, default: Any? = null): String = evalPropValue(getProp(name, default))
+fun evalProp(
+    name: String,
+    default: Any? = null,
+): String = evalPropValue(getProp(name, default))
 
 fun evalPropValue(value: String): String {
     fun placeHolder(value: String): String {
@@ -171,19 +189,20 @@ val publishToCurseForge = getProp("publish_to_curseforge", false).toBoolean() &&
 val modrinthId = getProp("modrinth_id", "")
 val publishToModrinth = getProp("publish_to_modrinth", false).toBoolean() && modrinthId.isNotBlank()
 val additionalDependencies = getPropList("additional_dependencies", " ")
-val modDependencies = listOf(
-    ModDependency("mixin-booter", useMixins, ""),
-    ModDependency("assetmover", useAssetMover, "com.cleanroommc:assetmover:${getProp("assetmover_version")}"),
-    ModDependency("configanytime", useConfigAnytime, "com.cleanroommc:configanytime:${getProp("configanytime_version")}"),
-    ModDependency("better-config", useBetterConfig, "io.github.meldexun:betterconfig:1.12.2-${getProp("betterconfig_version")}"),
-    ModDependency("crafttweaker", useCraftTweaker, "", optional = true),
-    ModDependency("groovyscript", useGroovyScript, "com.cleanroommc:groovyscript:${getProp("groovyscript_version")}", optional = true),
-    ModDependency("forgelin-continuous", useForgelinContinuous, "T#io.github.chaosunity.forgelin:Forgelin-Continuous:${evalProp("forgelin_continuous_version")}"),
-    ModDependency("catalyx", useCatalyx, "C#org.ender_development:catalyx:${getProp("catalyx_version")}"),
-    ModDependency("modularui-uf", useModularUi, "D#curse.maven:modularui-uf-1663175:${getProp("modularui_version")}"),
-    ModDependency("reach-fix", useReachFix, "D#curse.maven:reach-fix-556777:${getProp("reachfix_version")}"),
-    ModDependency("expanded-events", useExpandedEvents, "D#curse.maven:expanded-events-1396395:${getProp("expandedevents_version")}", availableOnModrinth = false),
-)
+val modDependencies =
+    listOf(
+        ModDependency("mixin-booter", useMixins, ""),
+        ModDependency("assetmover", useAssetMover, "com.cleanroommc:assetmover:${getProp("assetmover_version")}"),
+        ModDependency("configanytime", useConfigAnytime, "com.cleanroommc:configanytime:${getProp("configanytime_version")}"),
+        ModDependency("better-config", useBetterConfig, "io.github.meldexun:betterconfig:1.12.2-${getProp("betterconfig_version")}"),
+        ModDependency("crafttweaker", useCraftTweaker, "", optional = true),
+        ModDependency("groovyscript", useGroovyScript, "com.cleanroommc:groovyscript:${getProp("groovyscript_version")}", optional = true),
+        ModDependency("forgelin-continuous", useForgelinContinuous, "T#io.github.chaosunity.forgelin:Forgelin-Continuous:${evalProp("forgelin_continuous_version")}"),
+        ModDependency("catalyx", useCatalyx, "C#org.ender_development:catalyx:${getProp("catalyx_version")}"),
+        ModDependency("modularui-uf", useModularUi, "D#curse.maven:modularui-uf-1663175:${getProp("modularui_version")}"),
+        ModDependency("reach-fix", useReachFix, "D#curse.maven:reach-fix-556777:${getProp("reachfix_version")}"),
+        ModDependency("expanded-events", useExpandedEvents, "D#curse.maven:expanded-events-1396395:${getProp("expandedevents_version")}", availableOnModrinth = false),
+    )
 
 val useSpotless = getProp("disable_spotless", false).toBoolean()
 
@@ -259,16 +278,22 @@ dependencies {
         require(!('D' in flags && ('T' in flags || 'C' in flags))) { "D cannot be combined with T or C in '$raw'" }
 
         when {
-            'R' in flags -> runtimeOnly(notation) {
-                isTransitive = transitive
-                isChanging = changing
+            'R' in flags -> {
+                runtimeOnly(notation) {
+                    isTransitive = transitive
+                    isChanging = changing
+                }
             }
 
-            'D' in flags -> implementation(rfg.deobf(notation))
+            'D' in flags -> {
+                implementation(rfg.deobf(notation))
+            }
 
-            else -> implementation(notation) {
-                isTransitive = transitive
-                isChanging = changing
+            else -> {
+                implementation(notation) {
+                    isTransitive = transitive
+                    isChanging = changing
+                }
             }
         }
     }
@@ -286,8 +311,15 @@ idea {
         settings {
             taskTriggers { afterSync("afterSync") }
             runConfigurations {
-                fun newTask(name: String, task: String) = add(Gradle("${runConfigurations.size}. $name").apply { setProperty("taskNames", listOf(task)) })
-                fun release(name: String, params: String) = add(
+                fun newTask(
+                    name: String,
+                    task: String,
+                ) = add(Gradle("${runConfigurations.size}. $name").apply { setProperty("taskNames", listOf(task)) })
+
+                fun release(
+                    name: String,
+                    params: String,
+                ) = add(
                     Gradle(name).apply {
                         setProperty("taskNames", listOf((if (isTemplateRepo) "pushRelease" else "releaseAndPublish")))
                         setProperty("scriptParameters", params)
@@ -314,7 +346,14 @@ idea {
             compiler.javac {
                 afterEvaluate {
                     javacAdditionalOptions = "-encoding utf8"
-                    moduleJavacAdditionalOptions = mapOf("${project.name}.main" to tasks.compileJava.get().options.compilerArgs.joinToString(" ") { "\"$it\"" })
+                    moduleJavacAdditionalOptions =
+                        mapOf(
+                            "${project.name}.main" to
+                                tasks.compileJava
+                                    .get()
+                                    .options.compilerArgs
+                                    .joinToString(" ") { "\"$it\"" },
+                        )
                 }
             }
         }
@@ -552,6 +591,7 @@ configure<SpotlessExtension> {
         )
     }
     if (editorconfig != "spotless") return@configure
+
     fun cSpan(): String {
         val yFrom = git("log", "--max-parents=0", "--format=%as").split("-").first()
         val yLast = git("log", "-1", "--format=%as").split("-").first()
@@ -565,7 +605,11 @@ configure<SpotlessExtension> {
         removeUnusedImports()
         forbidWildcardImports()
         shortenFullyQualifiedTypes()
-        googleJavaFormat(getProp("google_java_format_version")).reorderImports(true).formatJavadoc(true).maxLineLength(200).aosp()
+        googleJavaFormat(getProp("google_java_format_version"))
+            .reorderImports(true)
+            .formatJavadoc(true)
+            .maxLineLength(200)
+            .aosp()
         formatAnnotations()
         licenseHeader(header)
     }
@@ -576,7 +620,7 @@ configure<SpotlessExtension> {
     }
     kotlinGradle {
         target("*.gradle.kts")
-        ktlint(getProp("ktlint_version")).editorConfigOverride(mapOf("ktlint_standard_kdoc" to "disabled"))
+        ktlint(getProp("ktlint_version"))
     }
 }
 
@@ -585,8 +629,14 @@ if (useAccessTransformer) {
     accessTransformerLocation.forEach {
         val atFile = file("$projectDir/src/main/resources/$it")
         if (atFile.exists()) {
-            tasks.deobfuscateMergedJarToSrg.get().accessTransformerFiles.from(atFile)
-            tasks.srgifyBinpatchedJar.get().accessTransformerFiles.from(atFile)
+            tasks.deobfuscateMergedJarToSrg
+                .get()
+                .accessTransformerFiles
+                .from(atFile)
+            tasks.srgifyBinpatchedJar
+                .get()
+                .accessTransformerFiles
+                .from(atFile)
         } else {
             throw GradleException("Access Transformer file '$it' does not exist!")
         }
@@ -613,11 +663,13 @@ fun guessIndent(): String {
     val default = "    "
     val editorconfig = file(".editorconfig").takeIf { it.exists() } ?: return default
     // Crude: ignores sections/globs, but good enough (spec: https://spec.editorconfig.org/)
-    val settings = editorconfig.useLines { lines ->
-        lines.map { it.trim() }
-            .filter { '=' in it }
-            .associate { it.substringBefore('=').trim().lowercase() to it.substringAfter('=').trim() }
-    }
+    val settings =
+        editorconfig.useLines { lines ->
+            lines
+                .map { it.trim() }
+                .filter { '=' in it }
+                .associate { it.substringBefore('=').trim().lowercase() to it.substringAfter('=').trim() }
+        }
     val size = settings["indent_size"]?.toIntOrNull() ?: 4
     return when (settings["indent_style"]?.lowercase()) {
         "tab" -> "\t"
@@ -681,24 +733,25 @@ tasks.register("createReference") {
         val objectName = modName.filter(Char::isLetterOrDigit)
         val tags = loadProps(tagsFile)
         val indent = guessIndent()
-        val reference = buildString {
-            appendLine("package $tagsPath")
-            appendLine("")
-            appendLine("internal typealias Reference = ${objectName}Reference")
-            appendLine("")
-            appendLine("/**")
-            appendLine(" * Auto-generated reference object containing constants from `$tagsFile`.")
-            appendLine(" * Don't change this file manually as it will be overwritten.")
-            appendLine(" */")
-            appendLine("@Suppress(\"UNUSED\")")
-            appendLine("object ${objectName}Reference {")
-            tags.forEach { (key, value) ->
-                val eval = (if (value is String) evalPropValue(value) else value).toString()
-                val value = if (eval.toDoubleOrNull() != null) eval else "\"${eval.replace("\"", "\\\"")}\""
-                appendLine("${indent}const val $key = $value")
+        val reference =
+            buildString {
+                appendLine("package $tagsPath")
+                appendLine("")
+                appendLine("internal typealias Reference = ${objectName}Reference")
+                appendLine("")
+                appendLine("/**")
+                appendLine(" * Auto-generated reference object containing constants from `$tagsFile`.")
+                appendLine(" * Don't change this file manually as it will be overwritten.")
+                appendLine(" */")
+                appendLine("@Suppress(\"UNUSED\")")
+                appendLine("object ${objectName}Reference {")
+                tags.forEach { (key, value) ->
+                    val eval = (if (value is String) evalPropValue(value) else value).toString()
+                    val value = if (eval.toDoubleOrNull() != null) eval else "\"${eval.replace("\"", "\\\"")}\""
+                    appendLine("${indent}const val $key = $value")
+                }
+                appendLine("}")
             }
-            appendLine("}")
-        }
         val outputPath = "src/main/kotlin/${tagsPath.replace(".", "/")}/${objectName}Reference.kt"
         val outputFile = layout.projectDirectory.file(outputPath).asFile
         outputFile.parentFile.mkdirs()
@@ -717,11 +770,12 @@ tasks.register("switchEditorConfig") {
     onlyIf { !getProp("disable_editorconfig", false).toBoolean() }
 
     doFirst {
-        val sourceFile = when (editorconfig) {
-            "spotless" -> spotlessEditorConfig
-            "roz" -> rozEditorConfig
-            else -> throw IllegalArgumentException("Unknown editorConfigType: $editorconfig")
-        }
+        val sourceFile =
+            when (editorconfig) {
+                "spotless" -> spotlessEditorConfig
+                "roz" -> rozEditorConfig
+                else -> throw IllegalArgumentException("Unknown editorConfigType: $editorconfig")
+            }
         if (!sourceFile.exists()) {
             throw GradleException("Source .editorconfig file '${sourceFile.path}' does not exist!")
         }
@@ -743,11 +797,12 @@ tasks.register("createIJScope") {
     doLast {
         val filtered = modName.filter(Char::isLetterOrDigit)
 
-        val ijScope = buildString {
-            appendLine("<component name=\"DependencyValidationManager\">")
-            appendLine("  <scope name=\"$modName Source\" pattern=\"file[$filtered.main]:*/&amp;&amp;!file[$filtered.main]:resources//*\" />")
-            appendLine("</component>")
-        }
+        val ijScope =
+            buildString {
+                appendLine("<component name=\"DependencyValidationManager\">")
+                appendLine("  <scope name=\"$modName Source\" pattern=\"file[$filtered.main]:*/&amp;&amp;!file[$filtered.main]:resources//*\" />")
+                appendLine("</component>")
+            }
 
         val file = outputFile.asFile
         file.parentFile.mkdirs()
@@ -759,6 +814,7 @@ tasks.register("createIJScope") {
 tasks.register("generateMixinJson") {
     group = "ender-development"
     description = "Generate missing mixin files"
+
     fun mixinCfg(name: String) = "src/main/resources/mixins/mixins.$modId.$name.json"
     val missingConfigs = getPropList("mixin_configs").filter { !file(mixinCfg(it)).exists() }
     onlyIf { useMixins && getProp("generate_mixin_json", true).toBoolean() && missingConfigs.isNotEmpty() }
@@ -766,20 +822,22 @@ tasks.register("generateMixinJson") {
         missingConfigs.forEach {
             val mixinCfg = file(mixinCfg(it))
 
-            val format = Json {
-                prettyPrint = true
-                prettyPrintIndent = guessIndent()
-            }
-            val cfg = buildJsonObject {
-                put("package", "$rootPackage.$modId.")
-                put("refmap", mixinRefMap)
-                put("target", "@env(DEFAULT)")
-                put("minVersion", "0.8.5")
-                put("compatibilityLevel", "JAVA_8")
-                putJsonArray("mixins") { }
-                putJsonArray("server") { }
-                putJsonArray("client") { }
-            }
+            val format =
+                Json {
+                    prettyPrint = true
+                    prettyPrintIndent = guessIndent()
+                }
+            val cfg =
+                buildJsonObject {
+                    put("package", "$rootPackage.$modId.")
+                    put("refmap", mixinRefMap)
+                    put("target", "@env(DEFAULT)")
+                    put("minVersion", "0.8.5")
+                    put("compatibilityLevel", "JAVA_8")
+                    putJsonArray("mixins") { }
+                    putJsonArray("server") { }
+                    putJsonArray("client") { }
+                }
             mixinCfg.writeText(format.encodeToString(JsonObject.serializer(), cfg))
         }
     }
@@ -799,7 +857,10 @@ tasks.withType<ProcessResources> {
     inputs.property("mixin_refmap", mixinRefMap)
 
     // Replace various properties
-    fun getFiles(pattern: String, baseDir: File = file("src/main/resources")) = fileTree(baseDir) { include(pattern) }.files.map { it.relativeTo(baseDir).invariantSeparatorsPath }
+    fun getFiles(
+        pattern: String,
+        baseDir: File = file("src/main/resources"),
+    ) = fileTree(baseDir) { include(pattern) }.files.map { it.relativeTo(baseDir).invariantSeparatorsPath }
     val mixins = getFiles("mixins/mixins.$modId.*.json")
     val lang = getFiles("assets/$modId/lang/*.lang")
     filesMatching(arrayListOf("mcmod.info", "pack.mcmeta") + mixins + lang) {
@@ -848,44 +909,68 @@ tasks.withType<Jar> {
 tasks.withType<JavaCompile> { options.encoding = "UTF-8" }
 
 /** Updated only when the remote first-line version is newer than the local one. */
-data class VersionedFile(val path: String, val headerPrefix: String, val headerSuffix: String = "", val userSectionMarker: String? = null)
-
-val versionedFiles = listOf(
-    VersionedFile("build.gradle.kts", "// v"),
-    VersionedFile("gradle.properties", "# v"),
-    VersionedFile("README.md", "<!-- v", " -->"),
-    VersionedFile(".gitignore", "# v", userSectionMarker = "# ---- USER SECTION"),
-    VersionedFile(".gitattributes", "# v", userSectionMarker = "# ---- USER SECTION"),
+data class VersionedFile(
+    val path: String,
+    val headerPrefix: String,
+    val headerSuffix: String = "",
+    val userSectionMarker: String? = null,
 )
 
-class PendingUpdate(val path: String, val content: String, val reason: String)
+val versionedFiles =
+    listOf(
+        VersionedFile("build.gradle.kts", "// v"),
+        VersionedFile("gradle.properties", "# v"),
+        VersionedFile("README.md", "<!-- v", " -->"),
+        VersionedFile(".gitignore", "# v", userSectionMarker = "# ---- USER SECTION"),
+        VersionedFile(".gitattributes", "# v", userSectionMarker = "# ---- USER SECTION"),
+    )
 
-fun connect(url: String): URLConnection = URI(url).toURL().openConnection().apply {
-    connectTimeout = 10_000
-    readTimeout = 10_000
-}
+class PendingUpdate(
+    val path: String,
+    val content: String,
+    val reason: String,
+)
+
+fun connect(url: String): URLConnection =
+    URI(url).toURL().openConnection().apply {
+        connectTimeout = 10_000
+        readTimeout = 10_000
+    }
 
 fun fetchText(url: String): String = connect(url).getInputStream().bufferedReader().use { it.readText() }
 
 fun fetchRaw(path: String): String = fetchText("https://raw.githubusercontent.com/$repoName/$updateBranch/$path")
 
 fun listRemoteTemplateFiles(): List<String> {
-    val json = JsonSlurper().parseText(
-        fetchText("https://api.github.com/repos/$repoName/git/trees/$updateBranch?recursive=1"),
-    ) as Map<*, *>
+    val json =
+        JsonSlurper().parseText(
+            fetchText("https://api.github.com/repos/$repoName/git/trees/$updateBranch?recursive=1"),
+        ) as Map<*, *>
     return (json["tree"] as List<*>)
         .map { it as Map<*, *> }
         .filter { it["type"] == "blob" && (it["path"] as String).startsWith("$templateDir/") }
         .map { it["path"] as String }
 }
 
-fun readVersion(text: String, prefix: String, suffix: String): List<Int>? {
+fun readVersion(
+    text: String,
+    prefix: String,
+    suffix: String,
+): List<Int>? {
     val first = text.lineSequence().firstOrNull() ?: return null
     if (!first.startsWith(prefix)) return null
-    return first.removePrefix(prefix).removeSuffix(suffix).trim().split('.').map { it.toIntOrNull() ?: return null }
+    return first
+        .removePrefix(prefix)
+        .removeSuffix(suffix)
+        .trim()
+        .split('.')
+        .map { it.toIntOrNull() ?: return null }
 }
 
-fun compareVersions(a: List<Int>, b: List<Int>): Int {
+fun compareVersions(
+    a: List<Int>,
+    b: List<Int>,
+): Int {
     for (i in 0 until maxOf(a.size, b.size)) {
         val c = a.getOrElse(i) { 0 }.compareTo(b.getOrElse(i) { 0 })
         if (c != 0) return c
@@ -904,9 +989,10 @@ fun collectUpdates(): List<PendingUpdate> {
         val local = file(versionedFile.path)
         val localVersion = if (local.exists()) readVersion(local.readText(), versionedFile.headerPrefix, versionedFile.headerSuffix) else null
         if (localVersion == null || compareVersions(remoteVersion, localVersion) > 0) {
-            val content = versionedFile.userSectionMarker
-                ?.let { mergeUserSection(remoteText, if (local.exists()) local.readText() else null, it) }
-                ?: remoteText
+            val content =
+                versionedFile.userSectionMarker
+                    ?.let { mergeUserSection(remoteText, if (local.exists()) local.readText() else null, it) }
+                    ?: remoteText
             val from = localVersion?.joinToString(".") ?: "none"
             updates += PendingUpdate(versionedFile.path, content, "$from -> ${remoteVersion.joinToString(".")}")
         }
@@ -924,7 +1010,11 @@ fun collectUpdates(): List<PendingUpdate> {
     return updates
 }
 
-fun mergeUserSection(remote: String, local: String?, markerPrefix: String): String {
+fun mergeUserSection(
+    remote: String,
+    local: String?,
+    markerPrefix: String,
+): String {
     val remoteLines = remote.lines()
     val remoteMarker = remoteLines.indexOfFirst { it.startsWith(markerPrefix) }
     if (remoteMarker < 0) return remote // upstream has no marker, nothing to preserve
@@ -933,12 +1023,13 @@ fun mergeUserSection(remote: String, local: String?, markerPrefix: String): Stri
     val localLines = local?.lines().orEmpty()
     val localMarker = localLines.indexOfFirst { it.startsWith(markerPrefix) }
 
-    val userPart = if (localMarker >= 0) {
-        localLines.subList(localMarker + 1, localLines.size)
-    } else {
-        val known = remoteLines.map { it.trim() }.toSet()
-        listOf("") + localLines.filter { it.isNotBlank() && it.trim() !in known && !it.startsWith("#") }
-    }
+    val userPart =
+        if (localMarker >= 0) {
+            localLines.subList(localMarker + 1, localLines.size)
+        } else {
+            val known = remoteLines.map { it.trim() }.toSet()
+            listOf("") + localLines.filter { it.isNotBlank() && it.trim() !in known && !it.startsWith("#") }
+        }
     return (managed + userPart).joinToString("\n").trimEnd() + "\n"
 }
 
@@ -986,7 +1077,12 @@ tasks.register("updateBuildScript") {
     }
 }
 
-fun withVersionHeader(text: String, prefix: String, suffix: String, version: String): String {
+fun withVersionHeader(
+    text: String,
+    prefix: String,
+    suffix: String,
+    version: String,
+): String {
     val nl = if ("\r\n" in text) "\r\n" else "\n"
     val lines = text.split(nl)
     val body = if (lines.first().startsWith(prefix)) lines.drop(1) else lines
@@ -1060,11 +1156,12 @@ modrinth {
     uploadFile.set(tasks.reobfJar)
     gameVersions = listOf(minecraftVersion)
     loaders = listOf("forge")
-    environment = when {
-        isClient && !isServer -> "client_only"
-        !isClient && isServer -> "server_only"
-        else -> "client_and_server"
-    }
+    environment =
+        when {
+            isClient && !isServer -> "client_only"
+            !isClient && isServer -> "server_only"
+            else -> "client_and_server"
+        }
     debugMode = getProp("modrinth_debug", false).toBoolean()
     changelog = getMarkdownChangelog()
     syncBodyFrom = file("README.md").readText()
@@ -1090,8 +1187,19 @@ tasks.modrinth {
 
 // Documentation Generation
 enum class PropKind { PROP, LIST, ENV, EVAL }
-data class PropUsage(val name: String, val kind: PropKind, val arg: String?, val file: String, val line: Int)
-data class PropMeta(val category: String, val description: String) {
+
+data class PropUsage(
+    val name: String,
+    val kind: PropKind,
+    val arg: String?,
+    val file: String,
+    val line: Int,
+)
+
+data class PropMeta(
+    val category: String,
+    val description: String,
+) {
     val isComplete get() = category.isNotBlank() && description.isNotBlank()
 }
 
@@ -1105,23 +1213,27 @@ fun String.unquoted(): String {
 }
 
 fun PropUsage.isRequired() = kind == PropKind.PROP && arg == null
+
 fun scanProps(source: File): List<PropUsage> {
     val text = source.readLines().joinToString("\n") { if (it.trimStart().startsWith("//")) "" else it }
-    return propCallRegex.findAll(text).map { m ->
-        val kind = when (m.groupValues[1]) {
-            "getPropList" -> PropKind.LIST
-            "getPropEnv" -> PropKind.ENV
-            "evalProp" -> PropKind.EVAL
-            else -> PropKind.PROP
-        }
-        PropUsage(
-            name = m.groupValues[2],
-            kind = kind,
-            arg = m.groups[3]?.value,
-            file = source.name,
-            line = text.substring(0, m.range.first).count { it == '\n' } + 1,
-        )
-    }.toList()
+    return propCallRegex
+        .findAll(text)
+        .map { m ->
+            val kind =
+                when (m.groupValues[1]) {
+                    "getPropList" -> PropKind.LIST
+                    "getPropEnv" -> PropKind.ENV
+                    "evalProp" -> PropKind.EVAL
+                    else -> PropKind.PROP
+                }
+            PropUsage(
+                name = m.groupValues[2],
+                kind = kind,
+                arg = m.groups[3]?.value,
+                file = source.name,
+                line = text.substring(0, m.range.first).count { it == '\n' } + 1,
+            )
+        }.toList()
 }
 
 fun loadPropMeta(): Map<String, PropMeta> {
@@ -1134,19 +1246,26 @@ fun loadPropMeta(): Map<String, PropMeta> {
 }
 
 fun savePropMeta(meta: Map<String, PropMeta>) {
-    val out = meta.toSortedMap().mapValues { (_, m) ->
-        linkedMapOf("category" to m.category, "description" to m.description)
-    }
+    val out =
+        meta.toSortedMap().mapValues { (_, m) ->
+            linkedMapOf("category" to m.category, "description" to m.description)
+        }
     propMetaFile.parentFile.mkdirs()
     propMetaFile.writeText(JsonOutput.prettyPrint(JsonOutput.toJson(out)) + "\n")
 }
 
-fun scanAllProps(): Map<String, List<PropUsage>> = listOf(file("build.gradle.kts")).filter { it.exists() }
-    .flatMap { scanProps(it) }
-    .groupBy { it.name }
-    .toSortedMap()
+fun scanAllProps(): Map<String, List<PropUsage>> =
+    listOf(file("build.gradle.kts"))
+        .filter { it.exists() }
+        .flatMap { scanProps(it) }
+        .groupBy { it.name }
+        .toSortedMap()
 
-fun renderProp(name: String, usages: List<PropUsage>, meta: PropMeta): String {
+fun renderProp(
+    name: String,
+    usages: List<PropUsage>,
+    meta: PropMeta,
+): String {
     val isList = usages.any { it.kind == PropKind.LIST }
     val isEval = usages.any { it.kind == PropKind.EVAL }
     val hasEnv = usages.any { it.kind == PropKind.ENV }
@@ -1154,26 +1273,36 @@ fun renderProp(name: String, usages: List<PropUsage>, meta: PropMeta): String {
 
     val defaults = usages.filter { it.kind == PropKind.PROP || it.kind == PropKind.EVAL }.mapNotNull { it.arg }.distinct()
 
-    val type = when {
-        isEval -> "Evaluated String"
+    val type =
+        when {
+            isEval -> {
+                "Evaluated String"
+            }
 
-        isList -> {
-            val delimiters = usages.filter { it.kind == PropKind.LIST }.map { it.arg ?: "\" \"" }.distinct()
-            "List (delimiter ${delimiters.joinToString(", ") { "`$it`" }})"
+            isList -> {
+                val delimiters = usages.filter { it.kind == PropKind.LIST }.map { it.arg ?: "\" \"" }.distinct()
+                "List (delimiter ${delimiters.joinToString(", ") { "`$it`" }})"
+            }
+
+            defaults.isNotEmpty() && defaults.all { it.unquoted().toBooleanStrictOrNull() != null } -> {
+                "Boolean"
+            }
+
+            defaults.isNotEmpty() && defaults.all { it.unquoted().toIntOrNull() != null } -> {
+                "Integer"
+            }
+
+            else -> {
+                "String"
+            }
         }
 
-        defaults.isNotEmpty() && defaults.all { it.unquoted().toBooleanStrictOrNull() != null } -> "Boolean"
-
-        defaults.isNotEmpty() && defaults.all { it.unquoted().toIntOrNull() != null } -> "Integer"
-
-        else -> "String"
-    }
-
-    val default = when {
-        isList -> "empty list"
-        defaults.isEmpty() -> "none"
-        else -> defaults.joinToString(", ") { "`${it.unquoted()}`" }
-    }
+    val default =
+        when {
+            isList -> "empty list"
+            defaults.isEmpty() -> "none"
+            else -> defaults.joinToString(", ") { "`${it.unquoted()}`" }
+        }
 
     return buildString {
         appendLine("### `$name`")
@@ -1187,7 +1316,10 @@ fun renderProp(name: String, usages: List<PropUsage>, meta: PropMeta): String {
     }
 }
 
-fun renderPropDocs(usages: Map<String, List<PropUsage>>, meta: Map<String, PropMeta>): String {
+fun renderPropDocs(
+    usages: Map<String, List<PropUsage>>,
+    meta: Map<String, PropMeta>,
+): String {
     val uncategorized = "⚠️ Uncategorized"
     val byCategory = usages.keys.groupBy { meta[it]?.category?.ifBlank { null } ?: uncategorized }
     val categories = byCategory.keys.sortedWith(compareBy({ it == uncategorized }, { it.split(" ", limit = 2).last().lowercase() }))
@@ -1274,11 +1406,16 @@ changelog {
 }
 
 fun git(vararg args: String): String {
-    val p = ProcessBuilder("git", *args)
-        .directory(rootDir)
-        .redirectErrorStream(true)
-        .start()
-    val out = p.inputStream.bufferedReader().readText().trim()
+    val p =
+        ProcessBuilder("git", *args)
+            .directory(rootDir)
+            .redirectErrorStream(true)
+            .start()
+    val out =
+        p.inputStream
+            .bufferedReader()
+            .readText()
+            .trim()
     check(p.waitFor() == 0) { "git ${args.joinToString(" ")} failed:\n$out" }
     return out
 }
@@ -1310,11 +1447,12 @@ tasks.register("tagRelease") {
     dependsOn("prepareRelease")
     doLast {
         val diffLink = changelog.instance.get().links[modVersion]
-        val commitMsg = buildString {
-            appendLine("Release $modVersion")
-            appendLine("Diff: $diffLink")
-            appendLine(git("log", "-1", "--format='Signed-off-by: %an <%ae>'").removeSurrounding("'"))
-        }
+        val commitMsg =
+            buildString {
+                appendLine("Release $modVersion")
+                appendLine("Diff: $diffLink")
+                appendLine(git("log", "-1", "--format='Signed-off-by: %an <%ae>'").removeSurrounding("'"))
+            }
         if (isTemplateRepo) {
             versionedFiles.forEach { git("add", file(it.path).canonicalPath) }
         }
@@ -1336,14 +1474,15 @@ tasks.register("collectCommits") {
 
         // classify: "fix: x" -> Bugfixes, "misc: x" -> Miscellaneous, else Changes
         val prefix = Regex("^(fix|misc)\\s*:\\s*(.+)$", RegexOption.IGNORE_CASE)
-        val newEntries: List<Pair<String, String>> = subjects.map { s ->
-            val m = prefix.find(s)
-            if (m != null) {
-                prefixToGroup.getValue(m.groupValues[1].lowercase()) to m.groupValues[2].trim()
-            } else {
-                "Changes" to s.trim()
+        val newEntries: List<Pair<String, String>> =
+            subjects.map { s ->
+                val m = prefix.find(s)
+                if (m != null) {
+                    prefixToGroup.getValue(m.groupValues[1].lowercase()) to m.groupValues[2].trim()
+                } else {
+                    "Changes" to s.trim()
+                }
             }
-        }
 
         // locate [Unreleased] section
         val lines = changelogFile.readLines()
@@ -1363,10 +1502,13 @@ tasks.register("collectCommits") {
                     grouped.getOrPut(current) { mutableListOf() }
                 }
 
-                line.isBlank() -> Unit
+                line.isBlank() -> {
+                    Unit
+                }
 
-                line.startsWith("- ") || line.startsWith("* ") ->
+                line.startsWith("- ") || line.startsWith("* ") -> {
                     grouped.getOrPut(current) { mutableListOf() }.add(line.drop(2).trim())
+                }
 
                 else -> {
                     val items = grouped[current]
@@ -1391,14 +1533,15 @@ tasks.register("collectCommits") {
         }
 
         // render in fixed group order, empty groups omitted
-        val body = buildList {
-            add("")
-            grouped.filterValues { it.isNotEmpty() }.forEach { (g, items) ->
-                add("### $g")
-                items.forEach { add("- $it") }
+        val body =
+            buildList {
                 add("")
+                grouped.filterValues { it.isNotEmpty() }.forEach { (g, items) ->
+                    add("### $g")
+                    items.forEach { add("- $it") }
+                    add("")
+                }
             }
-        }
         val result = lines.subList(0, start + 1) + body + lines.subList(end, lines.size)
         changelogFile.writeText(result.joinToString("\n") + "\n")
         logger.lifecycle("Added $added changelog entries")
@@ -1417,11 +1560,12 @@ tasks.register("verifyPushed") {
         check('-' !in modVersion) { "Not a release version ($modVersion), refusing to publish" }
         val head = git("rev-parse", "HEAD")
         git("remote").split("\n").forEach { remote ->
-            val remoteShas = git("ls-remote", "--tags", remote)
-                .lines()
-                .map { it.split('\t') }
-                .filter { it.size == 2 && (it[1] == "refs/tags/$modVersion^{}" || it[1] == "refs/tags/$modVersion") }
-                .map { it[0] }
+            val remoteShas =
+                git("ls-remote", "--tags", remote)
+                    .lines()
+                    .map { it.split('\t') }
+                    .filter { it.size == 2 && (it[1] == "refs/tags/$modVersion^{}" || it[1] == "refs/tags/$modVersion") }
+                    .map { it[0] }
             check(head in remoteShas) { "Tag $modVersion is not on $remote at HEAD ($head). Push it first; nothing was published." }
         }
     }
