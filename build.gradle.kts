@@ -615,9 +615,9 @@ tasks.register("afterSync") {
         "checkBuildScriptUpdate",
         "generateMixinJson",
         "checkPropertyDocs",
-        tasks.spotlessApply,
     )
     doLast { logger.lifecycle("Current Project Version: $modVersion") }
+    finalizedBy(tasks.spotlessApply)
 }
 
 fun guessIndent(): String {
