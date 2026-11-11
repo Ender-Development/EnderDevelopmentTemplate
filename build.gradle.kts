@@ -125,10 +125,7 @@ val useKotlin = getProp("use_kotlin", false).toBoolean()
 val editorconfig = getProp("editorconfig", "spotless")
 val minecraftVersion = getProp("minecraft_version", "1.12.2")
 val rootPackage = getProp("root_package", "org.ender_development")
-val userName = when {
-    getPropEnv("DEV_USERNAME").isNotBlank() -> getPropEnv("DEV_USERNAME")
-    else -> getProp("minecraft_username", "Developer")
-}
+val userName = getPropEnv("DEV_USERNAME").ifBlank { getProp("minecraft_username", "Developer") }
 
 val modId = getProp("mod_id").lowercase().trim().replace(" ", "_")
 val modName = getProp("mod_name")
@@ -251,6 +248,7 @@ dependencies {
 
     val modDeps = modDependencies.map { if (it.flag) it.dep else "" } + loadProps("dependencies.properties").values.map { it.toString().trim() }
     modDeps.filter { it.isNotEmpty() }.forEach { raw ->
+        if (raw.count { it == '#' } > 1) throw GradleException("Dependency $raw contains more than one delimiter '#'!")
         val flags = raw.substringBefore('#', "").uppercase()
         val notation = raw.substringAfter('#')
 
@@ -360,18 +358,8 @@ minecraft {
     extraRunJvmArguments.addAll(getPropList("extra_jvm_args", ";"))
 
     if (useTags && !useKotlin) {
-        val props = loadProps("tags.properties")
-        if (props.isNotEmpty()) {
-            injectedTags.set(
-                props.entries.associate { (k, v) ->
-                    val interpolated = evalPropValue(v.toString())
-                    if (interpolated.isEmpty()) {
-                        throw GradleException("Empty tag value found for key: $k")
-                    }
-                    k.toString() to interpolated
-                },
-            )
-        }
+        val props = loadProps("tags.properties").ifEmpty { return@minecraft }
+        injectedTags.set(props.entries.associate { (k, v) -> k.toString() to evalPropValue(v.toString()).ifEmpty { throw GradleException("Empty tag value found for key: $k") } })
     }
 }
 
@@ -677,11 +665,8 @@ tasks.register("prioritizeCoremods") {
     description = "Load MixinBooter and ConfigAnytime before everything else"
     dependsOn(tasks.prepareObfModsFolder)
     doLast {
-        fileTree("run/obfuscated").forEach {
-            if (it.isFile && it.name.matches(Regex("(mixinbooter|configanytime)-[0-9]+\\.[0-9]+\\.jar"))) {
-                it.renameTo(File(it.parentFile, "!${it.name}"))
-            }
-        }
+        val identifier = Regex("(mixinbooter|configanytime)-[0-9]+\\.[0-9]+\\.jar")
+        fileTree("run/obfuscated").filter { it.isFile && it.name.matches(identifier) }.forEach { it.renameTo(File(it.parentFile, "!${it.name}")) }
     }
 }
 
