@@ -7,6 +7,7 @@
  */
 
 import com.diffplug.gradle.spotless.SpotlessExtension
+import com.diffplug.gradle.spotless.SpotlessTask
 import com.gtnewhorizons.retrofuturagradle.fg12shadow.org.eclipse.jgit.storage.file.FileRepositoryBuilder
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
@@ -1269,7 +1270,9 @@ tasks.register("verifyRelease") {
     }
 }
 tasks.patchChangelog { mustRunAfter("collectCommits") }
-tasks.spotlessApply { mustRunAfter("syncBuildScriptVersion") }
+tasks.withType<SpotlessTask>().configureEach {
+    mustRunAfter("collectCommits", tasks.patchChangelog, "syncBuildScriptVersion")
+}
 tasks.build { mustRunAfter(tasks.spotlessApply) }
 tasks.register("prepareRelease") {
     group = "release"
