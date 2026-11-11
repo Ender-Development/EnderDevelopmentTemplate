@@ -13,6 +13,18 @@ Try to follow the [Common Changelog](https://common-changelog.org/) conventions.
 
 ### Miscellaneous
 
+## [2.0.8] - 2026-11-11
+
+### Changes
+
+- run spotless after clearskies expansion
+- add 'zone.rong.clearskies' to expand star imports
+- include changelog and author signing in automated release
+
+### Miscellaneous
+
+- always apply spotless last after sync
+
 ## [2.0.7] - 2026-11-11
 
 ### Changes
@@ -109,7 +121,8 @@ _The major refactor_
 - move functionality to `build.gradle.kts`
 - updated RFG to 2.0.6
 
-[Unreleased]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.0.7...HEAD
+[Unreleased]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.0.8...HEAD
+[2.0.8]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.0.7...2.0.8
 [2.0.7]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.0.6...2.0.7
 [2.0.6]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.0.5...2.0.6
 [2.0.5]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.0.4...2.0.5
