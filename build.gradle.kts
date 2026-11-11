@@ -1377,20 +1377,20 @@ tasks.register("collectCommits") {
 tasks.withType<PublishToMavenRepository>().configureEach { dependsOn("verifyPushed") }
 tasks.register("verifyPushed") {
     group = "release"
-    description = "Fails unless the release tag exists on origin and points at HEAD"
+    description = "Fails unless the release tag exists on remote and points at HEAD"
     notCompatibleWithConfigurationCache("runs git")
     mustRunAfter("pushRelease")
     val v = modVersion
     doLast {
-        check('-' !in v) { "Not a release version ($v), refusing to publish" }
+        check('-' !in modVersion) { "Not a release version ($modVersion), refusing to publish" }
         val head = git("rev-parse", "HEAD")
-        val remoteShas = git("ls-remote", "--tags", "origin")
-            .lines()
-            .map { it.split('\t') }
-            .filter { it.size == 2 && (it[1] == "refs/tags/$v^{}" || it[1] == "refs/tags/$v") }
-            .map { it[0] }
-        check(head in remoteShas) {
-            "Tag $v is not on origin at HEAD ($head). Push it first; nothing was published."
+        git("remote").split("\n").forEach { remote ->
+            val remoteShas = git("ls-remote", "--tags", remote)
+                .lines()
+                .map { it.split('\t') }
+                .filter { it.size == 2 && (it[1] == "refs/tags/$modVersion^{}" || it[1] == "refs/tags/$modVersion") }
+                .map { it[0] }
+            check(head in remoteShas) { "Tag $v is not on $remote at HEAD ($head). Push it first; nothing was published." }
         }
     }
 }
