@@ -590,7 +590,6 @@ tasks.register("afterSync") {
         "createReference",
         "createIJScope",
         "checkBuildScriptUpdate",
-        "syncBuildScriptVersion",
         "generateMixinJson",
         "checkPropertyDocs",
         tasks.spotlessApply,
@@ -1267,9 +1266,13 @@ tasks.register("tagRelease") {
     group = "release"
     description = "Builds, patches the changelog, commits and tags locally (nothing is pushed)"
     notCompatibleWithConfigurationCache("runs git")
-    dependsOn("verifyRelease", tasks.build, "collectCommits", tasks.patchChangelog)
+    dependsOn("verifyRelease", tasks.build, "collectCommits", tasks.patchChangelog, "syncBuildScriptVersion")
     val v = modVersion
     doLast {
+        if (isTemplateRepo) {
+            git("add", "README.md")
+            git("add", "build.gradle.kts")
+        }
         git("add", changelogFile.canonicalPath)
         git("commit", "-m", "Release $v")
         git("tag", "-a", v, "-m", "Release $v")
@@ -1385,7 +1388,9 @@ tasks.register("pushRelease") {
     description = "Atomically pushes the release commit and tag"
     notCompatibleWithConfigurationCache("runs git")
     dependsOn("tagRelease")
-    doLast { git("push", "--atomic", "origin", "HEAD", "refs/tags/$modVersion") }
+    doLast {
+        git("remotes").split("\n").forEach { git("push", "--atomic", it, "HEAD", "refs/tags/$modVersion") }
+    }
 }
 tasks.register("releaseAndPublish") {
     group = "release"
