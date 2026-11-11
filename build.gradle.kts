@@ -1266,7 +1266,7 @@ tasks.register("tagRelease") {
     group = "release"
     description = "Builds, patches the changelog, commits and tags locally (nothing is pushed)"
     notCompatibleWithConfigurationCache("runs git")
-    dependsOn("verifyRelease", tasks.build, "collectCommits", tasks.patchChangelog, "syncBuildScriptVersion")
+    dependsOn("verifyRelease", tasks.build, "collectCommits", tasks.patchChangelog, "syncBuildScriptVersion", tasks.spotlessApply)
     val v = modVersion
     doLast {
         if (isTemplateRepo) {
