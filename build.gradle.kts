@@ -131,7 +131,6 @@ val userName = when {
 val modId = getProp("mod_id").lowercase().trim().replace(" ", "_")
 val modName = getProp("mod_name")
 val modVersion = project.version.toString()
-val releaseVersion = modVersion.split("-").first()
 
 val modDescription = getProp("mod_description", "")
 val modAuthors = getPropList("mod_authors", ",").joinToString(", ")
@@ -965,7 +964,7 @@ tasks.register("syncBuildScriptVersion") {
     description = "Writes the buildscript_version property into the version header of the versioned files"
 
     onlyIf { isTemplateRepo }
-    mustRunAfter("verifyRelease")
+    mustRunAfter("collectCommits")
     doLast {
         require(Regex("""\d+(\.\d+)*""").matches(releaseVersion)) {
             "buildscript_version '$releaseVersion' is not a valid version (expected e.g. 1.2.3)"
@@ -1255,11 +1254,10 @@ tasks.register("verifyRelease") {
     group = "release"
     description = "Fails unless tree is clean, HEAD is untagged and the version is final"
     notCompatibleWithConfigurationCache("runs git")
-    val v = modVersion
     doLast {
         check(git("status", "--porcelain").isEmpty()) { "Working tree is not clean" }
         check(git("tag", "--points-at", "HEAD").isEmpty()) { "HEAD is already tagged, nothing to release" }
-        check('-' !in v) { "Not a release version ($v). Run with -Preckon.stage=final" }
+        check('-' !in modVersion) { "Not a release version ($modVersion). Run with -Preckon.stage=final" }
     }
 }
 tasks.register("tagRelease") {
@@ -1274,8 +1272,8 @@ tasks.register("tagRelease") {
             git("add", "build.gradle.kts")
         }
         git("add", changelogFile.canonicalPath)
-        git("commit", "-m", "Release $v")
-        git("tag", "-a", v, "-m", "Release $v")
+        git("commit", "-m", "Release $modVersion")
+        git("tag", "-a", modVersion, "-m", "Release $modVersion")
     }
 }
 tasks.register("collectCommits") {
