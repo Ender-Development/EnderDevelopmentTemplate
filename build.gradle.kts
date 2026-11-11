@@ -503,6 +503,15 @@ configure<SpotlessExtension> {
         endWithNewline()
     }
     freshmark {
+        fun latestRelease(): String {
+            val lastTag = git("tag").split("\n").last()
+            val current = modVersion.split("-")
+            return when {
+                current.size > 1 -> lastTag
+                compareVersions(current.first().split(".").map { it.toInt() }, lastTag.split(".").map { it.toInt() }) > 0 -> current.first()
+                else -> lastTag
+            }
+        }
         target(".github/**/*.md", "docs/**/*.md", "gradle/**/*.md", "src/*/resources/**/*.md", "*.md")
         propertiesFile("gradle.properties")
         properties {
@@ -512,7 +521,7 @@ configure<SpotlessExtension> {
             put("LICENSE", rmLicense)
             put("README", rmContent)
             put("SPONSOR", rmPartnership)
-            put("VERSION", releaseVersion)
+            put("VERSION", latestRelease())
         }
     }
     flexmark {
@@ -966,19 +975,19 @@ tasks.register("syncBuildScriptVersion") {
     onlyIf { isTemplateRepo }
     mustRunAfter("collectCommits")
     doLast {
-        require(Regex("""\d+(\.\d+)*""").matches(releaseVersion)) {
-            "buildscript_version '$releaseVersion' is not a valid version (expected e.g. 1.2.3)"
+        require(Regex("""\d+(\.\d+)*""").matches(modVersion)) {
+            "buildscript_version '$modVersion' is not a valid version (expected e.g. 1.2.3)"
         }
 
         for ((filePath, headerPrefix, headerSuffix) in versionedFiles) {
             val target = file(filePath)
             val old = target.readText()
-            val new = withVersionHeader(old, headerPrefix, headerSuffix, releaseVersion)
+            val new = withVersionHeader(old, headerPrefix, headerSuffix, modVersion)
             if (new != old) {
                 target.writeText(new)
-                logger.lifecycle("Set $filePath header to $headerPrefix$releaseVersion$headerSuffix")
+                logger.lifecycle("Set $filePath header to $headerPrefix$modVersion$headerSuffix")
             } else {
-                logger.lifecycle("$filePath already at $releaseVersion")
+                logger.lifecycle("$filePath already at $modVersion")
             }
         }
     }
