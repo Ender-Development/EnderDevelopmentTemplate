@@ -137,7 +137,7 @@ val modVersion = project.version.toString()
 val modDescription = getProp("mod_description", "")
 val modAuthors = getPropList("mod_authors", ",").joinToString(", ")
 val modCredits = getProp("mod_credits", "Ender-Development.org")
-val modUrl = getProp("mod_url", "")
+val modUrl = getProp("mod_url")
 val modLogoPath = evalProp("mod_logo_path", $$"assets/${mod_id}/textures/logo.png")
 
 val useAccessTransformer = getProp("use_access_transformer", false).toBoolean()
