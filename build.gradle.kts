@@ -671,6 +671,7 @@ tasks.injectTags.configure {
 tasks.prepareObfModsFolder.configure { finalizedBy("prioritizeCoremods") }
 tasks.spotlessApply.configure {
     onlyIf { useSpotless }
+    dependsOn(tasks.clearSkiesApply)
 }
 tasks.register("prioritizeCoremods") {
     description = "Load MixinBooter and ConfigAnytime before everything else"
