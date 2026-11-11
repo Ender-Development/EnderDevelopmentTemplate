@@ -283,21 +283,30 @@ idea {
         settings {
             taskTriggers { afterSync("afterSync") }
             runConfigurations {
+                fun newTask(name: String, task: String) = add(Gradle("${runConfigurations.size}. $name").apply { setProperty("taskNames", listOf(task)) })
+                fun release(name: String, params: String) = add(
+                    Gradle(name).apply {
+                        setProperty("taskNames", listOf((if (isTemplateRepo) "pushRelease" else "releaseAndPublish")))
+                        setProperty("scriptParameters", params)
+                    },
+                )
                 clear()
-                var index = 0
-                add(Gradle("${index++}. Run Client").apply { setProperty("taskNames", listOf(tasks.runClient)) })
-                add(Gradle("${index++}. Run Server").apply { setProperty("taskNames", listOf(tasks.runServer)) })
-                add(Gradle("${index++}. Run Obfuscated Client").apply { setProperty("taskNames", listOf(tasks.runObfClient)) })
-                add(Gradle("${index++}. Run Obfuscated Server").apply { setProperty("taskNames", listOf(tasks.runObfServer)) })
-                add(Gradle("${index++}. Build Jars").apply { setProperty("taskNames", listOf(tasks.build)) })
-                add(Gradle("${index++}. Publish to Maven").apply { setProperty("taskNames", listOf(tasks.publish)) })
-                add(Gradle("${index++}. Update Buildscripts").apply { setProperty("taskNames", listOf("updateBuildScript")) })
-                if (useSpotless) {
-                    add(Gradle("${index++}. Apply Spotless").apply { setProperty("taskNames", listOf(tasks.spotlessApply)) })
-                }
+                newTask("Run Client", "runClient")
+                newTask("Run Server", "runServer")
+                newTask("Run Obfuscated Client", "runObfClient")
+                newTask("Run Obfuscated Server", "runObfServer")
+                newTask("Build Jars", "build")
+                newTask("publish to Maven", "publish")
+                newTask("Update Buildscripts", "updateBuildScript")
+                newTask("Apply Spotless", "spotlessApply")
+
                 if (isTemplateRepo) {
-                    add(Gradle("${index++}. Generate Template Docs").apply { setProperty("taskNames", listOf("generatePropertyDocs")) })
+                    newTask("Generate Template Docs", "generatePropertyDocs")
                 }
+
+                release("Bump (patch)", "-Preckon.stage=final")
+                release("Bump (minor)", "-Preckon.stage=final -Preckon.scope=minor")
+                release("Bump (major)", "-Preckon.stage=final -Preckon.scope=major")
             }
             compiler.javac {
                 afterEvaluate {
