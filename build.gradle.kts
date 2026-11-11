@@ -943,6 +943,7 @@ data class VersionedFile(
 val versionedFiles =
     listOf(
         VersionedFile("build.gradle.kts", "// v"),
+        VersionedFile("settings.gradle.kts", "// v"),
         VersionedFile("gradle.properties", "# v"),
         VersionedFile("README.md", "<!-- v", " -->"),
         VersionedFile(".gitignore", "# v", userSectionMarker = "# ---- USER SECTION"),
