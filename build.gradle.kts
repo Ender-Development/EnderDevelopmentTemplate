@@ -1272,8 +1272,8 @@ tasks.register("verifyRelease") {
 tasks.register("prepareRelease") {
     group = "release"
     description = "Prepares the final changes, updates version references etc."
-    dependsOn("verifyRelease", tasks.build, "collectCommits", tasks.patchChangelog, "syncBuildScriptVersion")
-    finalizedBy(tasks.spotlessApply)
+    dependsOn("verifyRelease")
+    finalizedBy(tasks.build, "collectCommits", tasks.patchChangelog, "syncBuildScriptVersion", tasks.spotlessApply)
 }
 tasks.register("tagRelease") {
     group = "release"
