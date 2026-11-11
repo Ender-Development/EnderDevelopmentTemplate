@@ -13,6 +13,19 @@ Try to follow the [Common Changelog](https://common-changelog.org/) conventions.
 
 ### Miscellaneous
 
+## [2.1.0] - 2026-11-11
+
+### Changes
+
+- add proper build.gradle.kts header
+- add .gitattributes to the versioned files
+- add .gitignore to the versioned files
+
+### Miscellaneous
+
+- apply formatting to build.gradle.kts
+- iterate with forEach instead of for-loop
+
 ## [2.0.9] - 2026-11-11
 
 ### Changes
@@ -135,7 +148,8 @@ _The major refactor_
 - move functionality to `build.gradle.kts`
 - updated RFG to 2.0.6
 
-[Unreleased]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.0.9...HEAD
+[Unreleased]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.1.0...HEAD
+[2.1.0]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.0.9...2.1.0
 [2.0.9]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.0.8...2.0.9
 [2.0.8]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.0.7...2.0.8
 [2.0.7]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.0.6...2.0.7
