@@ -13,6 +13,19 @@ Try to follow the [Common Changelog](https://common-changelog.org/) conventions.
 
 ### Miscellaneous
 
+## [2.0.5] - 2026-11-11
+
+### Changes
+
+- isolated verifyRelease task
+- apply spotless last
+- add prepareRelease task
+- add custom version handling for the README.md shield
+- work on more release shenanigans
+- tweak task order for release task
+- add spotless to release task
+- move buildscript version bump to release task
+
 ## [2.0.4] - 2026-11-11
 
 ### Changes
