@@ -1294,12 +1294,18 @@ tasks.register("tagRelease") {
     notCompatibleWithConfigurationCache("runs git")
     dependsOn("prepareRelease")
     doLast {
+        val diffLink = changelog.instance.get().links[modVersion]
+        val commitMsg = buildString {
+            appendLine("Release $modVersion")
+            appendLine("Diff: $diffLink")
+            appendLine(git("log", "-1", "--format='%n%nSigned-off-by: %an <%ae>'"))
+        }
         if (isTemplateRepo) {
             versionedFiles.forEach { git("add", file(it.path).canonicalPath) }
         }
         git("add", changelogFile.canonicalPath)
-        git("commit", "-m", "Release $modVersion")
-        git("tag", "-a", modVersion, "-m", "Release $modVersion")
+        git("commit", "-m", "Release $commitMsg")
+        git("tag", "-a", modVersion, "-m", changelog.renderItem(changelog.get(modVersion), Changelog.OutputType.PLAIN_TEXT))
     }
 }
 tasks.register("collectCommits") {
