@@ -973,7 +973,7 @@ tasks.register("syncBuildScriptVersion") {
     description = "Writes the buildscript_version property into the version header of the versioned files"
 
     onlyIf { isTemplateRepo }
-    mustRunAfter("collectCommits")
+    mustRunAfter(tasks.patchChangelog)
     doLast {
         require(Regex("""\d+(\.\d+)*""").matches(modVersion)) {
             "buildscript_version '$modVersion' is not a valid version (expected e.g. 1.2.3)"
@@ -1268,9 +1268,7 @@ tasks.register("verifyRelease") {
         check('-' !in modVersion) { "Not a release version ($modVersion). Run with -Preckon.stage=final" }
     }
 }
-tasks.named("collectCommits") { mustRunAfter("verifyRelease") }
 tasks.patchChangelog { mustRunAfter("collectCommits") }
-tasks.named("syncBuildScriptVersion") { mustRunAfter(tasks.patchChangelog) }
 tasks.spotlessApply { mustRunAfter("syncBuildScriptVersion") }
 tasks.build { mustRunAfter(tasks.spotlessApply) }
 tasks.register("prepareRelease") {
@@ -1296,6 +1294,7 @@ tasks.register("collectCommits") {
     group = "release"
     description = "Adds commits since the last tag to [Unreleased], grouped by prefix"
     notCompatibleWithConfigurationCache("runs git")
+    mustRunAfter("verifyRelease")
     doLast {
         // commits since last version tag
         val lastTag = runCatching { git("describe", "--tags", "--abbrev=0", "--match", "[0-9]*") }.getOrNull()
