@@ -1273,12 +1273,13 @@ tasks.register("prepareRelease") {
     group = "release"
     description = "Prepares the final changes, updates version references etc."
     dependsOn("verifyRelease", tasks.build, "collectCommits", tasks.patchChangelog, "syncBuildScriptVersion")
+    finalizedBy(tasks.spotlessApply)
 }
 tasks.register("tagRelease") {
     group = "release"
     description = "Builds, patches the changelog, commits and tags locally (nothing is pushed)"
     notCompatibleWithConfigurationCache("runs git")
-    dependsOn("prepareRelease", tasks.spotlessApply)
+    dependsOn("prepareRelease")
     doLast {
         if (isTemplateRepo) {
             git("add", "README.md")
