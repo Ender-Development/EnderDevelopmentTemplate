@@ -576,6 +576,8 @@ configure<SpotlessExtension> {
             put("README", rmContent)
             put("SPONSOR", rmPartnership)
             put("VERSION", latestRelease())
+            put("MODRINTH", modrinthId)
+            put("CURSEFORGE", curseForgeId)
         }
     }
     flexmark {
