@@ -1,4 +1,4 @@
-<!-- v2.1.3 -->
+<!-- v2.1.4 -->
 <!---freshmark header
 output = [
 	'#',
@@ -43,8 +43,8 @@ output = shields.join("\n");
 [![Gradle](https://img.shields.io/badge/Gradle-9.9.0-blue?logo=gradle&logoColor=02303A)](https://gradle.org/releases/)
 
 
-[![Maven](https://img.shields.io/badge/Maven-org.ender__development%3Atemplate__mod-blue?logo=apachemaven&logoColor=C71A36)](https://maven.ender-development.org/org/ender_development/template_mod/2.1.3/)
-[![Version](https://img.shields.io/badge/Version-2.1.3-blue?logo=semver&logoColor=3F4551)](https://github.com/Ender-Development/EnderDevelopmentTemplate/releases/tag/2.1.3)
+[![Maven](https://img.shields.io/badge/Maven-org.ender__development%3Atemplate__mod-blue?logo=apachemaven&logoColor=C71A36)](https://maven.ender-development.org/org/ender_development/template_mod/2.1.4/)
+[![Version](https://img.shields.io/badge/Version-2.1.4-blue?logo=semver&logoColor=3F4551)](https://github.com/Ender-Development/EnderDevelopmentTemplate/releases/tag/2.1.4)
 [![License](https://img.shields.io/badge/License-LGPL--3.0--only-blue?logo=spdx)](https://github.com/Ender-Development/EnderDevelopmentTemplate/blob/master/LICENSE)
 
 > Universal Java / Kotlin Template for Minecraft 1.12 utilizing the latest tooling. If you have further questions, feel free to reach out to us.
