@@ -67,7 +67,6 @@ plugins {
 }
 
 val repoName = "Ender-Development/EnderDevelopmentTemplate"
-val updateBranch = "master"
 val templateDir = "gradle/template"
 
 data class ModDependency(
@@ -873,6 +872,7 @@ tasks.withType<ProcessResources> {
         pattern: String,
         baseDir: File = file("src/main/resources"),
     ) = fileTree(baseDir) { include(pattern) }.files.map { it.relativeTo(baseDir).invariantSeparatorsPath }
+
     val mixins = getFiles("mixins/mixins.$modId.*.json")
     val lang = getFiles("assets/$modId/lang/*.lang")
     filesMatching(arrayListOf("mcmod.info", "pack.mcmeta") + mixins + lang) {
@@ -928,6 +928,8 @@ data class VersionedFile(
     val userSectionMarker: String? = null,
 )
 
+val updateRef = resolveLatestTag()
+
 val versionedFiles =
     listOf(
         VersionedFile("build.gradle.kts", "// v"),
@@ -952,12 +954,27 @@ fun connect(url: String): URLConnection =
 
 fun fetchText(url: String): String = connect(url).getInputStream().bufferedReader().use { it.readText() }
 
-fun fetchRaw(path: String): String = fetchText("https://raw.githubusercontent.com/$repoName/$updateBranch/$path")
+fun fetchRaw(path: String): String = fetchText("https://raw.githubusercontent.com/$repoName/$updateRef/$path")
+
+fun resolveLatestTag(): String {
+    val tags =
+        JsonSlurper().parseText(
+            fetchText("https://api.github.com/repos/$repoName/tags?per_page=100"),
+        ) as List<*>
+    return tags
+        .map { (it as Map<*, *>)["name"] as String }
+        .mapNotNull { name ->
+            val parts = name.split('.').map { it.toIntOrNull() ?: return@mapNotNull null }
+            name to parts
+        }.maxWithOrNull { a, b -> compareVersions(a.second, b.second) }
+        ?.first
+        ?: throw GradleException("No release tag found in $repoName")
+}
 
 fun listRemoteTemplateFiles(): List<String> {
     val json =
         JsonSlurper().parseText(
-            fetchText("https://api.github.com/repos/$repoName/git/trees/$updateBranch?recursive=1"),
+            fetchText("https://api.github.com/repos/$repoName/git/trees/$updateRef?recursive=1"),
         ) as Map<*, *>
     return (json["tree"] as List<*>)
         .map { it as Map<*, *> }
@@ -1046,12 +1063,18 @@ fun mergeUserSection(
     return (managed + userPart).joinToString("\n").trimEnd() + "\n"
 }
 
+tasks.register("checkBuildScriptLatest") {
+    group = "ender-development"
+    description = "Get the version number of the latest release"
+    doLast { logger.lifecycle("Latest Buildscript Release: $updateRef") }
+}
+
 tasks.register("checkBuildScriptUpdate") {
     group = "ender-development"
     description = "Checks whether a newer build script version is available (does not modify anything)"
 
     onlyIf { !isTemplateRepo }
-
+    dependsOn("checkBuildScriptLatest")
     doLast {
         val updates = collectUpdates()
         if (updates.isEmpty()) {
