@@ -1160,7 +1160,7 @@ tasks.register<TaskPublishCurseForge>("curseforge") {
     onlyIf { publishToCurseForge }
     apiToken = getPropEnv("CURSEFORGE_TOKEN")
     debugMode = getProp("curseforge_debug", false).toBoolean()
-    if (curseForgeId.isBlank()) return@register
+    if (!publishToCurseForge) return@register
     val uploadFile = upload(curseForgeId, tasks.reobfJar)
     uploadFile.displayName = "$modId-$version"
     uploadFile.releaseType = releaseType
@@ -1186,7 +1186,7 @@ tasks.register<TaskPublishCurseForge>("curseforge") {
 modrinth {
     // [Docs](https://github.com/modrinth/minotaur)
     token = getPropEnv("MODRINTH_TOKEN")
-    if (modrinthId.isBlank() || token.toString().isBlank()) return@modrinth
+    if (token.toString().isBlank() || !publishToModrinth) return@modrinth
     projectId = modrinthId
     versionName = "$modName v$modVersion"
     versionNumber = modVersion
