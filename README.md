@@ -40,7 +40,7 @@ output = shields.join("\n");
 -->
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.4.20-blue?logo=kotlin)](https://kotlinlang.org/)
 [![Java](https://img.shields.io/badge/Java-25.0.5-blue?logo=openjdk&logoColor=000000)](https://www.azul.com/downloads/?version=java-25-lts&package=jdk#zulu)
-[![Gradle](https://img.shields.io/badge/Gradle-9.9.0-blue?logo=gradle&logoColor=02303A)](https://gradle.org/releases/)
+[![Gradle](https://img.shields.io/badge/Gradle-9.9.1-blue?logo=gradle&logoColor=02303A)](https://gradle.org/releases/)
 
 
 [![Maven](https://img.shields.io/badge/Maven-org.ender__development%3Atemplate__mod-blue?logo=apachemaven&logoColor=C71A36)](https://maven.ender-development.org/org/ender_development/template_mod/2.1.4/)
