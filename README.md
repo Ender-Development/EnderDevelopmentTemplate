@@ -1,4 +1,4 @@
-<!-- v2.2.0 -->
+<!-- v2.2.1 -->
 <!---freshmark header
 output = [
 	'#',
@@ -46,8 +46,8 @@ output = shields.join("\n");
 [![Gradle](https://img.shields.io/badge/Gradle-9.9.1-blue?logo=gradle&logoColor=02303A&color=02303A)](https://gradle.org/releases/)
 
 
-[![Maven](https://img.shields.io/badge/Maven-org.ender__development%3Atemplate__mod-blue?logo=apachemaven&logoColor=C71A36&color=C71A36)](https://maven.ender-development.org/org/ender_development/template_mod/2.2.0/)
-[![Latest Release](https://img.shields.io/badge/Latest_Release-2.2.0-blue?logo=semver&logoColor=FFFFFF&color=3F4551)](https://github.com/Ender-Development/EnderDevelopmentTemplate/releases/tag/2.2.0)
+[![Maven](https://img.shields.io/badge/Maven-org.ender__development%3Atemplate__mod-blue?logo=apachemaven&logoColor=C71A36&color=C71A36)](https://maven.ender-development.org/org/ender_development/template_mod/2.2.1/)
+[![Latest Release](https://img.shields.io/badge/Latest_Release-2.2.1-blue?logo=semver&logoColor=FFFFFF&color=3F4551)](https://github.com/Ender-Development/EnderDevelopmentTemplate/releases/tag/2.2.1)
 [![License](https://img.shields.io/badge/License-LGPL--3.0--only-blue?logo=spdx&color=4398CC)](https://github.com/Ender-Development/EnderDevelopmentTemplate/blob/master/LICENSE)
 
 > Universal Java / Kotlin Template for Minecraft 1.12 utilizing the latest tooling. If you have further questions, feel free to reach out to us.
