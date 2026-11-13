@@ -39,7 +39,8 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.longOrNull
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
-import net.darkhax.curseforgegradle.TaskPublishCurseForge
+import me.modmuss50.mpp.ReleaseType
+import me.modmuss50.mpp.platforms.modrinth.ModrinthEnvironment
 import org.gradle.internal.extensions.core.extra
 import org.gradle.plugins.ide.idea.model.IdeaLanguageLevel
 import org.jetbrains.changelog.Changelog
@@ -68,15 +69,14 @@ plugins {
     id("zone.rong.clearskies") version libs.versions.clearskiesVersion
     // publishing
     id("org.jetbrains.changelog") version libs.versions.jetbrainsChangelogVersion
-    id("net.darkhax.curseforgegradle") version libs.versions.curseforgegradleVersion
-    id("com.modrinth.minotaur") version libs.versions.minotaurVersion
+    id("me.modmuss50.mod-publish-plugin") version libs.versions.modPublishPluginVersion
 }
 
 val repoName = "Ender-Development/EnderDevelopmentTemplate"
 val templateDir = "gradle/template"
 
 data class ModDependency(
-    val identifier: String,
+    val slug: String,
     val flag: Boolean,
     val dep: String,
     val availableOnCurseForge: Boolean = true,
@@ -84,8 +84,12 @@ data class ModDependency(
     val optional: Boolean = false,
 )
 
+/**
+ * Get the changelog for the current version formatted as Markdown
+ */
 fun getMarkdownChangelog(): String {
     if (!file("CHANGELOG.md").exists()) throw GradleException("CHANGELOG.md does not exist!")
+    if (modVersion.contains("-")) return ""
     val log = changelog.renderItem(changelog.get(modVersion).withHeader(false).withEmptySections(false), Changelog.OutputType.MARKDOWN)
     if (log.isEmpty()) throw GradleException("changelog for version $modVersion is empty!")
     return log
@@ -439,6 +443,81 @@ publishing {
         }
     }
 }
+tasks.publish {
+    onlyIf { !isTemplateRepo }
+}
+
+fun modArchive(): Provider<RegularFile> {
+    val jar = tasks.named<Jar>("jar").flatMap { it.archiveFile }
+    if (!tasks.names.contains("reobfJar")) return jar
+    return tasks.named("reobfJar").flatMap { reobf ->
+        val outputs = reobf.outputs.files
+        if (outputs.files.size != 1) {
+            jar
+        } else {
+            layout.file(provider { outputs.singleFile })
+        }
+    }
+}
+
+publishMods {
+    modLoaders.add("forge")
+    maxRetries = 5
+    changelog = getMarkdownChangelog()
+    type =
+        when (getProp("release_type", "release")) {
+            "release" -> ReleaseType.STABLE
+            "beta" -> ReleaseType.BETA
+            "alpha" -> ReleaseType.ALPHA
+            else -> throw GradleException("'release_type' is none of ['release', 'beta', 'alpha']")
+        }
+    curseforge {
+        dryRun = getProp("curseforge_debug", false).toBoolean() || !publishToCurseForge
+        accessToken = getPropEnv("CURSEFORGE_TOKEN").ifEmpty { return@curseforge }
+        projectId = moddexProject?.curseforge?.id ?: return@curseforge
+        minecraftVersions.add(minecraftVersion)
+        client = isClient
+        server = isServer
+
+        optional("had-enough-items")
+        optional("theonesmeagle")
+        modDependencies.filter { it.flag && it.availableOnCurseForge }.forEach {
+            if (it.optional) {
+                optional(it.slug)
+            } else {
+                requires(it.slug)
+            }
+        }
+    }
+    modrinth {
+        dryRun = getProp("modrinth_debug", false).toBoolean() || !publishToModrinth
+        accessToken = getPropEnv("MODRINTH_TOKEN").ifEmpty { return@modrinth }
+        projectId = moddexProject?.modrinth?.id ?: return@modrinth
+        minecraftVersions.add(minecraftVersion)
+        if (getProp("modrinth_sync_readme", true).toBoolean()) {
+            projectDescription = providers.fileContents(layout.projectDirectory.file("README.me")).asText
+        }
+        environment =
+            when {
+                isClient && !isServer -> ModrinthEnvironment.CLIENT_ONLY
+                !isClient && isServer -> ModrinthEnvironment.SERVER_ONLY
+                else -> ModrinthEnvironment.CLIENT_AND_SERVER
+            }
+
+        optional("had-enough-items")
+        optional("theonesmeagle")
+        // removeSuffix is needed as modularui-uf isn't published on modrinth
+        modDependencies.filter { it.flag && it.availableOnModrinth }.forEach {
+            val slug = it.slug.removeSuffix("-uf")
+            if (it.optional) {
+                optional(slug)
+            } else {
+                requires(slug)
+            }
+        }
+        additionalDependencies.forEach { requires(it) }
+    }
+}
 
 repositories {
     mavenCentral()
@@ -564,15 +643,7 @@ configure<SpotlessExtension> {
         endWithNewline()
     }
     freshmark {
-        fun latestRelease(): String {
-            val lastTag = git("tag").split("\n").last()
-            val current = modVersion.split("-")
-            return when {
-                current.size > 1 -> lastTag
-                compareVersions(current.first().split(".").map { it.toInt() }, lastTag.split(".").map { it.toInt() }) > 0 -> current.first()
-                else -> lastTag
-            }
-        }
+        fun latestRelease(): String = if (modVersion.split("-").size == 1) modVersion else git("tag").split("\n").last()
         target(".github/**/*.md", "docs/**/*.md", "gradle/**/*.md", "src/*/resources/**/*.md", "*.md")
         propertiesFile("gradle.properties")
         properties {
@@ -1165,77 +1236,6 @@ tasks.register("syncBuildScriptVersion") {
     }
 }
 
-tasks.register<TaskPublishCurseForge>("curseforge") {
-    // [Docs](https://github.com/Darkhax/CurseForgeGradle)
-    group = "publishing"
-    description = "Upload project to CurseForge"
-    dependsOn(tasks.reobfJar, "verifyPushed")
-    onlyIf { publishToCurseForge }
-    apiToken = getPropEnv("CURSEFORGE_TOKEN")
-    debugMode = getProp("curseforge_debug", false).toBoolean()
-    if (!publishToCurseForge || apiToken.toString().isBlank()) return@register
-    val uploadFile = upload(moddexProject!!.curseforge!!.id, tasks.reobfJar)
-    uploadFile.displayName = "$modId-$version"
-    uploadFile.releaseType = releaseType
-    uploadFile.addJavaVersion("Java 8")
-    uploadFile.addModLoader("Forge")
-    uploadFile.addGameVersion(minecraftVersion)
-    uploadFile.changelog = getMarkdownChangelog()
-    uploadFile.changelogType = "markdown"
-    if (isServer) uploadFile.addEnvironment("Server")
-    if (isClient) uploadFile.addEnvironment("Client")
-    uploadFile.addOptional("had-enough-items")
-    uploadFile.addOptional("theonesmeagle")
-    modDependencies.filter { it.flag && it.availableOnCurseForge }.forEach {
-        if (it.optional) {
-            uploadFile.addOptional(it.identifier)
-        } else {
-            uploadFile.addRequirement(it.identifier)
-        }
-    }
-    additionalDependencies.forEach(uploadFile::addRequirement)
-}
-
-modrinth {
-    // [Docs](https://github.com/modrinth/minotaur)
-    token = getPropEnv("MODRINTH_TOKEN")
-    if (token.toString().isBlank() || !publishToModrinth) return@modrinth
-    projectId = moddexProject!!.modrinth!!.id
-    versionName = "$modName v$modVersion"
-    versionNumber = modVersion
-    versionType = releaseType
-    uploadFile.set(tasks.reobfJar)
-    gameVersions = listOf(minecraftVersion)
-    loaders = listOf("forge")
-    environment =
-        when {
-            isClient && !isServer -> "client_only"
-            !isClient && isServer -> "server_only"
-            else -> "client_and_server"
-        }
-    debugMode = getProp("modrinth_debug", false).toBoolean()
-    changelog = getMarkdownChangelog()
-    syncBodyFrom = file("README.md").readText()
-    dependencies {
-        optional.project("had-enough-items")
-        optional.project("theonesmeagle")
-        // removeSuffix is needed as modularui-uf isn't published on modrinth
-        modDependencies.filter { it.flag && it.availableOnModrinth }.forEach {
-            val slug = it.identifier.removeSuffix("-uf")
-            if (it.optional) {
-                optional.project(slug)
-            } else {
-                required.project(slug)
-            }
-        }
-        additionalDependencies.forEach(required::project)
-    }
-}
-tasks.modrinth {
-    dependsOn(tasks.modrinthSyncBody, "verifyPushed")
-    onlyIf { publishToModrinth && getProp("modrinth_sync_readme", true).toBoolean() }
-}
-
 // Documentation Generation
 enum class PropKind { PROP, LIST, ENV, EVAL }
 
@@ -1479,6 +1479,7 @@ tasks.register("verifyRelease") {
         check(git("status", "--porcelain").isEmpty()) { "Working tree is not clean" }
         check(git("tag", "--points-at", "HEAD").isEmpty()) { "HEAD is already tagged, nothing to release" }
         check('-' !in modVersion) { "Not a release version ($modVersion). Run with -Preckon.stage=final" }
+        delete(fileTree(layout.buildDirectory.dir("libs")) { include("*.jar") })
     }
 }
 tasks.patchChangelog { mustRunAfter("collectCommits") }
@@ -1608,6 +1609,7 @@ tasks.register("verifyPushed") {
     notCompatibleWithConfigurationCache("runs git")
     mustRunAfter("pushRelease")
     doLast {
+        if (getProp("modrinth_debug", false).toBoolean() && getProp("curseforge_debug", false).toBoolean()) return@doLast
         check('-' !in modVersion) { "Not a release version ($modVersion), refusing to publish" }
         val head = git("rev-parse", "HEAD")
         git("remote").split("\n").forEach { remote ->
@@ -1633,7 +1635,7 @@ tasks.register("pushRelease") {
 tasks.register("releaseAndPublish") {
     group = "release"
     description = "release, then publish. Run with -Preckon.stage=final"
-    dependsOn("pushRelease", tasks.publish)
+    dependsOn("pushRelease", tasks.publish, tasks.publishMods)
 }
 
 data class Platform(
