@@ -7,11 +7,31 @@ Try to follow the [Common Changelog](https://common-changelog.org/) conventions.
 
 ## [Unreleased]
 
+### Additions
+
 ### Changes
 
 ### Bugfixes
 
 ### Miscellaneous
+
+## [2.2.2] - 2026-11-15
+
+### Additions
+
+- additional changelog section
+
+### Changes
+
+- transition to publish via `me.modmuss50.mod-publish-plugin`
+
+### Bugfixes
+
+- error when retrieving changelog for non-existent version
+
+### Miscellaneous
+
+- tone done on the sponsor part in the README.md
 
 ## [2.2.1] - 2026-11-13
 
@@ -203,7 +223,8 @@ _The major refactor_
 - move functionality to `build.gradle.kts`
 - updated RFG to 2.0.6
 
-[Unreleased]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.2.1...HEAD
+[Unreleased]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.2.2...HEAD
+[2.2.2]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.2.1...2.2.2
 [2.2.1]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.2.0...2.2.1
 [2.2.0]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.1.4...2.2.0
 [2.1.4]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.1.3...2.1.4
