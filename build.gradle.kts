@@ -724,7 +724,7 @@ configure<SpotlessExtension> {
 
 // Manage Access Transformers
 if (useAccessTransformer) {
-    accessTransformerLocation.forEach {
+    accessTransformerLocation.split(" ").forEach {
         val atFile = file("$projectDir/src/main/resources/$it")
         if (atFile.exists()) {
             tasks.deobfuscateMergedJarToSrg
