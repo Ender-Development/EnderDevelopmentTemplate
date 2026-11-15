@@ -1444,8 +1444,8 @@ tasks.register("generatePropertyDocs") {
     }
 }
 
-val changelogGroups = listOf("Changes", "Bugfixes", "Miscellaneous")
-val prefixToGroup = mapOf("fix" to "Bugfixes", "misc" to "Miscellaneous")
+val changelogGroups = listOf("Additions", "Changes", "Bugfixes", "Miscellaneous")
+val prefixToGroup = mapOf("add" to "Additions", "fix" to "Bugfixes", "misc" to "Miscellaneous")
 val changelogFile = file(if (isTemplateRepo) "gradle/template/CHANGELOG.md" else "CHANGELOG.md")
 
 changelog {
@@ -1525,7 +1525,7 @@ tasks.register("collectCommits") {
         val subjects = git("log", range, "--no-merges", "--pretty=format:%s").lines().filter { it.isNotBlank() && !it.startsWith("Release ") }
 
         // classify: "fix: x" -> Bugfixes, "misc: x" -> Miscellaneous, else Changes
-        val prefix = Regex("^(fix|misc)\\s*:\\s*(.+)$", RegexOption.IGNORE_CASE)
+        val prefix = Regex("^(add|fix|misc)\\s*:\\s*(.+)$", RegexOption.IGNORE_CASE)
         val newEntries: List<Pair<String, String>> =
             subjects.map { s ->
                 val m = prefix.find(s)
