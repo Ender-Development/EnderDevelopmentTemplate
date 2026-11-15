@@ -49,8 +49,8 @@ import org.jetbrains.gradle.ext.compiler
 import org.jetbrains.gradle.ext.runConfigurations
 import org.jetbrains.gradle.ext.settings
 import org.jetbrains.gradle.ext.taskTriggers
+import java.net.HttpURLConnection
 import java.net.URI
-import java.net.URLConnection
 import java.net.URLEncoder
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
@@ -1022,6 +1022,7 @@ val versionedFiles =
         VersionedFile("build.gradle.kts", "// v"),
         VersionedFile("settings.gradle.kts", "// v"),
         VersionedFile("gradle.properties", "# v"),
+        VersionedFile("secrets.example.properties", "# v"),
         VersionedFile("README.md", "<!-- v", " -->"),
         VersionedFile(".gitignore", "# v", userSectionMarker = "# ---- USER SECTION"),
         VersionedFile(".gitattributes", "# v", userSectionMarker = "# ---- USER SECTION"),
@@ -1033,13 +1034,22 @@ class PendingUpdate(
     val reason: String,
 )
 
-fun connect(url: String): URLConnection =
-    URI(url).toURL().openConnection().apply {
-        connectTimeout = 10_000
-        readTimeout = 10_000
-    }
+fun connect(url: String): HttpURLConnection {
+    val conn =
+        (URI(url).toURL().openConnection() as HttpURLConnection).apply {
+            connectTimeout = 10_000
+            readTimeout = 10_000
+            setRequestProperty("User-Agent", "Ender-Development.org BuildScripts")
+        }
 
-fun fetchText(url: String): String = connect(url).getInputStream().bufferedReader().use { it.readText() }
+    // Only send the token to GitHub hosts, never to arbitrary URLs
+    if (getPropEnv("GITHUB_TOKEN").isNotBlank() && conn.url.host in setOf("api.github.com", "raw.githubusercontent.com")) {
+        conn.setRequestProperty("Authorization", "token ${getPropEnv("GITHUB_TOKEN")}")
+    }
+    return conn
+}
+
+fun fetchText(url: String): String = connect(url).inputStream.bufferedReader().use { it.readText() }
 
 fun fetchRaw(path: String): String = fetchText("https://raw.githubusercontent.com/$repoName/$updateRef/$path")
 
