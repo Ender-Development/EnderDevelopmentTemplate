@@ -84,17 +84,6 @@ data class ModDependency(
     val optional: Boolean = false,
 )
 
-/**
- * Get the changelog for the current version formatted as Markdown
- */
-fun getMarkdownChangelog(): String {
-    if (!file("CHANGELOG.md").exists()) throw GradleException("CHANGELOG.md does not exist!")
-    if (modVersion.contains("-")) return ""
-    val log = changelog.renderItem(changelog.get(modVersion).withHeader(false).withEmptySections(false), Changelog.OutputType.MARKDOWN)
-    if (log.isEmpty()) throw GradleException("changelog for version $modVersion is empty!")
-    return log
-}
-
 fun loadProps(filename: String): Properties =
     Properties().apply {
         val file = file(filename)
@@ -156,6 +145,18 @@ fun evalPropValue(value: String): String {
     }
     return shell(value)
 }
+
+val markdownChangelog: Provider<String> =
+    provider {
+        if (!file("CHANGELOG.md").exists()) throw GradleException("CHANGELOG.md does not exist!")
+        val log =
+            changelog.renderItem(
+                changelog.get(modVersion).withHeader(false).withEmptySections(false),
+                Changelog.OutputType.MARKDOWN,
+            )
+        if (log.isEmpty()) throw GradleException("changelog for version $modVersion is empty!")
+        log
+    }
 
 val isTemplateRepo = git("remote").split("\n").any { git("remote", "get-url", it).contains(repoName) }
 val versionGradle = getProp("gradle_version")
@@ -463,7 +464,7 @@ fun modArchive(): Provider<RegularFile> {
 publishMods {
     modLoaders.add("forge")
     maxRetries = 5
-    changelog = getMarkdownChangelog()
+    changelog = markdownChangelog
     type =
         when (getProp("release_type", "release")) {
             "release" -> ReleaseType.STABLE
