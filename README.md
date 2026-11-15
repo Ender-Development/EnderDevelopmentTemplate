@@ -55,9 +55,7 @@ output = shields.join("\n");
 <!---freshmark description
 output = "{{readme}}".replaceAll("<br>", "\n")
 -->
-<a href='https://www.akliz.net/enderman'><img src='https://raw.githubusercontent.com/Ender-Development/.github/refs/heads/master/assets/ender-development/banner.png' alt='Promotional Banner'/></a>
-
-# About
+## <img src='https://raw.githubusercontent.com/Ender-Development/.github/refs/heads/master/assets/ender-development/about.svg' alt='`~ $ java -jar about.jar`' />
 This is the successor to our [Catalyx-Template](https://github.com/Ender-Development/Catalyx-Template). The main changes are:
 - adapt [RFG 2.0+](https://github.com/GTNewHorizons/RetroFuturaGradle/releases), which requires Java 25 in the dev env
 - remove the build-in plugin, everything is now handled by `build.gradle.kts` and `settings.gradle.kts`
@@ -85,13 +83,15 @@ Besides these the template still offers:
 <!---freshmark partnership
 output = "{{partnership}}".replaceAll("<br>", "\n")
 -->
-# Partnership with Akliz
-> It's a pleasure to be partnered with Akliz. Besides being a fantastic server provider, which makes it incredibly easy to set up a server of your choice, they help me to push myself and the quality of my projects to the next level. Furthermore, you can click on the banner below to get a discount. :3
+## <img src='https://raw.githubusercontent.com/Ender-Development/.github/refs/heads/master/assets/ender-development/partner.svg' alt='`~ $ coffee --partner`' />
+<div align='center'>
 
-<p align='center'><a href='https://www.akliz.net/enderman'><img src='https://raw.githubusercontent.com/Ender-Development/.github/refs/heads/master/assets/ender-development/partnership.png' alt='Akliz Official Partner'/></a></p>
+**Need a server to play on?** Our hosting partner [Akliz](https://www.akliz.net/enderman) has got you covered.
 
-If you aren't located in the [US](https://www.akliz.net/enderman), Akliz now offers servers in:
-- [Europe](https://www.akliz.net/enderman-eu)
-- [Oceania](https://www.akliz.net/enderman-oce)
+[![Akliz hosting - promotional banner](https://raw.githubusercontent.com/Ender-Development/.github/refs/heads/master/assets/ender-development/banner.png)](https://www.akliz.net/enderman)
+
+Servers in [US](https://www.akliz.net/enderman) - [Europe](https://www.akliz.net/enderman-eu) - [Oceania](https://www.akliz.net/enderman-oce)
+
+</div>
 <!---freshmark /partnership -->
 <!-- modrinth_exclude.end -->
