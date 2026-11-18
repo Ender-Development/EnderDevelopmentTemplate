@@ -651,11 +651,11 @@ Must be on of [`roz`, `spotless`].
 
 ### `use_access_transformer`
 
-A way to change visibility of Minecraft's classes, methods and fields. AT files should be in the root of src/main/resources with the filename formatted as: `${mod_id}_at.cfg`
+A way to change visibility of Minecraft's classes, methods and fields. The AT file should be in the root of src/main/resources with the filename formatted as: `${mod_id}_at.cfg`
 
 - **Type:** Boolean
 - **Required:** no
-- **Default:** `false`
+- **Default:** `true`
 
 ### `use_dependency_at_files`
 
@@ -816,3 +816,14 @@ The path where the generated Tags class will be placed. Separators should be dot
 - **Type:** Evaluated String
 - **Required:** no
 - **Default:** `${root_package}.${mod_id}.Tags`
+
+## ⚠️ Uncategorized
+
+### `GITHUB_TOKEN`
+
+_No description yet._
+
+- **Type:** String
+- **Required:** no
+- **Default:** none
+- **Environment variable:** `GITHUB_TOKEN` takes precedence over the property

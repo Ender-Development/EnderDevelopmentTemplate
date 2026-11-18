@@ -7,6 +7,10 @@
         "category": "\ud83c\udf0d Minecraft",
         "description": "Can be used to set the player name"
     },
+    "GITHUB_TOKEN": {
+        "category": "",
+        "description": ""
+    },
     "MAVEN_PASSWORD": {
         "category": "\ud83d\udcf0 Publishing - Maven",
         "description": "Password to authenticate Maven access"
@@ -317,7 +321,7 @@
     },
     "use_access_transformer": {
         "category": "\ud83d\udee0\ufe0f Utility - Access Transformers",
-        "description": "A way to change visibility of Minecraft's classes, methods and fields. AT files should be in the root of src/main/resources with the filename formatted as: `${mod_id}_at.cfg`"
+        "description": "A way to change visibility of Minecraft's classes, methods and fields. The AT file should be in the root of src/main/resources with the filename formatted as: `${mod_id}_at.cfg`"
     },
     "use_assetmover": {
         "category": "\ud83d\udd2d Integration - AssetMover",

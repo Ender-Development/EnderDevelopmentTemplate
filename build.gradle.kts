@@ -177,8 +177,8 @@ val modCredits = getProp("mod_credits", "Ender-Development.org")
 val modUrl = getProp("mod_url")
 val modLogoPath = evalProp("mod_logo_path", $$"assets/${mod_id}/textures/logo.png")
 
-val useAccessTransformer = getProp("use_access_transformer", false).toBoolean()
 val accessTransformerLocation = evalProp("access_transformer_location", $$"${mod_id}_at.cfg")
+val useAccessTransformer = getProp("use_access_transformer", true).toBoolean() && file("$projectDir/src/main/resources/$accessTransformerLocation").exists()
 
 val useTags = getProp("use_tags", true).toBoolean() && file("tags.properties").exists()
 val tagClassName = evalProp("tag_class_name", $$"${root_package}.${mod_id}.Tags")
@@ -724,20 +724,18 @@ configure<SpotlessExtension> {
 
 // Manage Access Transformers
 if (useAccessTransformer) {
-    accessTransformerLocation.split(" ").forEach {
-        val atFile = file("$projectDir/src/main/resources/$it")
-        if (atFile.exists()) {
-            tasks.deobfuscateMergedJarToSrg
-                .get()
-                .accessTransformerFiles
-                .from(atFile)
-            tasks.srgifyBinpatchedJar
-                .get()
-                .accessTransformerFiles
-                .from(atFile)
-        } else {
-            throw GradleException("Access Transformer file '$it' does not exist!")
-        }
+    val atFile = file("$projectDir/src/main/resources/$accessTransformerLocation")
+    if (atFile.exists()) {
+        tasks.deobfuscateMergedJarToSrg
+            .get()
+            .accessTransformerFiles
+            .from(atFile)
+        tasks.srgifyBinpatchedJar
+            .get()
+            .accessTransformerFiles
+            .from(atFile)
+    } else {
+        throw GradleException("Access Transformer file '$accessTransformerLocation' does not exist!")
     }
 }
 
