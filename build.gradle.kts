@@ -760,6 +760,8 @@ if (useAccessTransformer) {
     } else {
         throw GradleException("Access Transformer file '$accessTransformerLocation' does not exist!")
     }
+    // Apply ATs to both Minecraft and Forge sources/runtime patched jar
+    tasks.applyJST.configure { accessTransformerFiles.from(atFile) }
 }
 
 tasks.register("afterSync") {
