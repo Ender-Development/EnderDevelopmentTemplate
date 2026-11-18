@@ -833,6 +833,14 @@ tasks.spotlessApply.configure {
     onlyIf { useSpotless }
     dependsOn(tasks.clearSkiesApply)
 }
+tasks.decompressDecompiledSources {
+    enabled =
+        !layout.buildDirectory
+            .dir("rfg/minecraft-src")
+            .get()
+            .asFile
+            .exists()
+}
 tasks.register("prioritizeCoremods") {
     description = "Load MixinBooter and ConfigAnytime before everything else"
     dependsOn(tasks.prepareObfModsFolder)
