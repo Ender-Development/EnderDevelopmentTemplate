@@ -1029,6 +1029,9 @@ tasks.withType<Jar> {
         if (useAccessTransformer) {
             attributeMap["FMLAT"] = accessTransformerLocation
         }
+        if (useMixins && getPropList("mixin_configs").isNotEmpty()) {
+            attributeMap["MixinConfigs"] = getPropList("mixin_configs").joinToString(",")
+        }
         if (useMixins && mixinConnectorClass.isNotBlank()) {
             attributeMap["MixinConnector"] = mixinConnectorClass
         }
