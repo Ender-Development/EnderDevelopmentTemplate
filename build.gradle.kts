@@ -407,8 +407,7 @@ minecraft {
     username = userName
     useDependencyAccessTransformers = getProp("use_dependency_at_files", true).toBoolean()
 
-    extraRunJvmArguments.add("-ea:$group.$modId")
-    val args = mutableListOf<String>()
+    val args = mutableListOf("-ea:$group.$modId")
     args.add("-Dmixin.hotSwap=true")
     args.add("-Dmixin.checks.interfaces=true")
     args.add("-Dmixin.debug.export=true")
@@ -446,7 +445,7 @@ publishing {
     }
 }
 tasks.publish {
-    onlyIf { !isTemplateRepo && publishToMaven}
+    onlyIf { !isTemplateRepo && publishToMaven }
 }
 
 fun modArchive(): Provider<RegularFile> {
