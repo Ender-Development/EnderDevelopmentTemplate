@@ -446,7 +446,7 @@ publishing {
     }
 }
 tasks.publish {
-    onlyIf { !isTemplateRepo }
+    onlyIf { !isTemplateRepo && publishToMaven}
 }
 
 fun modArchive(): Provider<RegularFile> {
