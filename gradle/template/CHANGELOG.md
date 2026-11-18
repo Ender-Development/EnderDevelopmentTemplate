@@ -15,6 +15,28 @@ Try to follow the [Common Changelog](https://common-changelog.org/) conventions.
 
 ### Miscellaneous
 
+## [2.2.4] - 2026-11-18
+
+### Additions
+
+- insert mixin configs into manifest
+
+### Changes
+
+- auto detect java version
+- gate publish task behind maven boolean
+- optional maven publishing
+- ATs are now a single file per mod
+
+### Bugfixes
+
+- apply ATs at runtime
+
+### Miscellaneous
+
+- check for source before decompress
+- cleanup
+
 ## [2.2.3] - 2026-11-15
 
 ### Additions
@@ -237,7 +259,8 @@ _The major refactor_
 - move functionality to `build.gradle.kts`
 - updated RFG to 2.0.6
 
-[Unreleased]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.2.3...HEAD
+[Unreleased]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.2.4...HEAD
+[2.2.4]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.2.3...2.2.4
 [2.2.3]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.2.2...2.2.3
 [2.2.2]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.2.1...2.2.2
 [2.2.1]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.2.0...2.2.1
