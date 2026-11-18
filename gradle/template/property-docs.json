@@ -287,6 +287,10 @@
         "category": "\ud83d\udcf0 Publishing - CurseForge",
         "description": "Enable features related to publishing to CurseForge"
     },
+    "publish_to_maven": {
+        "category": "\ud83d\udcf0 Publishing - Maven",
+        "description": "Enable features related to publishing to Maven"
+    },
     "publish_to_modrinth": {
         "category": "\ud83d\udcf0 Publishing - Modrinth",
         "description": "Enable features related to publishing to Modrinth"

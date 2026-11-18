@@ -201,6 +201,7 @@ val mixinRefMap = evalProp("mixin_refmap", $$"mixins.${mod_id}.refmap.json")
 val mixinConnectorClass = evalProp("mixin_connector_class", $$"${root_package}.${mod_id}.MixinConnector")
 
 val mavenUrl = getProp("maven_url", "https://maven.ender-development.org")
+val publishToMaven = getProp("publish_to_maven", true).toBoolean()
 val releaseType = getProp("release_type", "release")
 if (!listOf("release", "beta", "alpha").contains(releaseType)) throw GradleException("'release_type' is none of ['release', 'beta', 'alpha']")
 val isServer = getProp("is_server_side", true).toBoolean()
@@ -650,7 +651,7 @@ configure<SpotlessExtension> {
         properties {
             putAll(extra.properties.mapValues { evalPropValue(it.value.toString()) })
             put("repoName", repoName)
-            put("mavenUrl", mavenUrl)
+            put("mavenUrl", if (publishToMaven) mavenUrl else "")
             put("LICENSE", rmLicense)
             put("README", rmContent)
             put("SPONSOR", rmPartnership)

@@ -32,7 +32,10 @@ if ("{{MODDEX}}" !== "") {
 shields.push("");
 shields.push("");
 
-shields.push(linkShield("Maven", "{{root_package}}:{{mod_id}}", "-blue?logo=apachemaven&logoColor=C71A36&color=C71A36", "{{mavenUrl}}/" + "{{root_package}}/{{mod_id}}/".replaceAll("\\.", "/") + "{{VERSION}}/"));
+if ("{{mavenUrl}}" !== "") {
+    shields.push(linkShield("Maven", "{{root_package}}:{{mod_id}}", "-blue?logo=apachemaven&logoColor=C71A36&color=C71A36", "{{mavenUrl}}/" + "{{root_package}}/{{mod_id}}/".replaceAll("\\.", "/") + "{{VERSION}}/"));
+}
+
 shields.push(linkShield("Latest Release", "{{VERSION}}", "-blue?logo=semver&logoColor=FFFFFF&color=3F4551", "{{mod_url}}/releases/tag/{{VERSION}}"));
 shields.push(linkShield("License", "{{LICENSE}}", "-blue?logo=spdx&color=4398CC", "{{mod_url}}/blob/master/LICENSE"));
 

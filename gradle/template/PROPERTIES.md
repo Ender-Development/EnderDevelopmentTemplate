@@ -560,6 +560,14 @@ Name used to upload files to the Maven specified by `maven_url`
 - **Default:** none
 - **Environment variable:** `MAVEN_USERNAME` takes precedence over the property
 
+### `publish_to_maven`
+
+Enable features related to publishing to Maven
+
+- **Type:** Boolean
+- **Required:** no
+- **Default:** `true`
+
 ## 📰 Publishing - Modrinth
 
 ### `modrinth_debug`
