@@ -158,8 +158,30 @@ val markdownChangelog: Provider<String> =
         log
     }
 
+fun console(
+    command: String,
+    vararg args: String,
+): String {
+    val p = ProcessBuilder(command, *args).directory(rootDir).redirectErrorStream(true).start()
+    val out =
+        p.inputStream
+            .bufferedReader()
+            .readText()
+            .trim()
+    check(p.waitFor() == 0) { "$command ${args.joinToString(" ")} failed:\n$out" }
+    return out
+}
+
+fun git(vararg args: String): String = console("git", *args)
+
 val isTemplateRepo = git("remote").split("\n").any { git("remote", "get-url", it).contains(repoName) }
 val versionGradle = getProp("gradle_version")
+val javaVersion =
+    console("java", "--version")
+        .split("\n")
+        .firstOrNull()
+        ?.split(" ")
+        ?.getOrNull(1) ?: JavaVersion.current()
 val kotlinVersion = getProp("kotlin_version")
 val useKotlin = getProp("use_kotlin", false).toBoolean()
 val editorconfig = getProp("editorconfig", "spotless")
@@ -649,6 +671,7 @@ configure<SpotlessExtension> {
         propertiesFile("gradle.properties")
         properties {
             putAll(extra.properties.mapValues { evalPropValue(it.value.toString()) })
+            put("javaVersion", javaVersion)
             put("repoName", repoName)
             put("mavenUrl", if (publishToMaven) mavenUrl else "")
             put("LICENSE", rmLicense)
@@ -1463,21 +1486,6 @@ changelog {
     groups.set(changelogGroups)
     repositoryUrl.set(modUrl)
     path = changelogFile.canonicalPath
-}
-
-fun git(vararg args: String): String {
-    val p =
-        ProcessBuilder("git", *args)
-            .directory(rootDir)
-            .redirectErrorStream(true)
-            .start()
-    val out =
-        p.inputStream
-            .bufferedReader()
-            .readText()
-            .trim()
-    check(p.waitFor() == 0) { "git ${args.joinToString(" ")} failed:\n$out" }
-    return out
 }
 
 tasks.register("verifyRelease") {
