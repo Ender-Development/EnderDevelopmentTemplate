@@ -39,8 +39,9 @@ updates:
           - "org.jetbrains.kotlin*"
           - "org.jetbrains.kotlinx*"
     ignore:
-      # CurseMaven file IDs aren't real versions, in case Dependabot ever finds them
       - dependency-name: "curse.maven:*"
+      - dependency-name: "org.jetbrains.kotlin:*"
+        versions: [">=2.4.21, <2.4.30"]
 
   - package-ecosystem: "github-actions"
     directory: "/"

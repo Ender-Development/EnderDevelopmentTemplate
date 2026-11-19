@@ -1,7 +1,7 @@
 [versions]
 # Build tooling
 retrofuturagradle = "2.0.6"
-kotlin = "2.4.21"
+kotlin = "2.4.20"
 kotlinxSerialization = "1.13.0"
 jetbrainsExtension = "1.4.1"
 jetbrainsChangelog = "2.5.0"
