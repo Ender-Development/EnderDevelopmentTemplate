@@ -1088,8 +1088,6 @@ data class VersionedFile(
     val userSectionMarker: String? = null,
 )
 
-val updateRef = resolveLatestTag()
-
 val versionedFiles =
     listOf(
         VersionedFile("build.gradle.kts", "// v"),
@@ -1124,7 +1122,7 @@ fun connect(url: String): HttpURLConnection {
 
 fun fetchText(url: String): String = connect(url).inputStream.bufferedReader().use { it.readText() }
 
-fun fetchRaw(path: String): String = fetchText("https://raw.githubusercontent.com/$repoName/$updateRef/$path")
+fun fetchRaw(path: String): String = fetchText("https://raw.githubusercontent.com/$repoName/${resolveLatestTag()}/$path")
 
 fun resolveLatestTag(): String {
     val tags =
@@ -1144,7 +1142,7 @@ fun resolveLatestTag(): String {
 fun listRemoteTemplateFiles(): List<String> {
     val json =
         JsonSlurper().parseText(
-            fetchText("https://api.github.com/repos/$repoName/git/trees/$updateRef?recursive=1"),
+            fetchText("https://api.github.com/repos/$repoName/git/trees/${resolveLatestTag()}?recursive=1"),
         ) as Map<*, *>
     return (json["tree"] as List<*>)
         .map { it as Map<*, *> }
@@ -1236,7 +1234,8 @@ fun mergeUserSection(
 tasks.register("checkBuildScriptLatest") {
     group = "ender-development"
     description = "Get the version number of the latest release"
-    doLast { logger.lifecycle("Latest Buildscript Release: $updateRef") }
+    onlyIf { !isTemplateRepo }
+    doLast { logger.lifecycle("Latest Buildscript Release: ${resolveLatestTag()}") }
 }
 
 tasks.register("checkBuildScriptUpdate") {
