@@ -15,6 +15,25 @@ Try to follow the [Common Changelog](https://common-changelog.org/) conventions.
 
 ### Miscellaneous
 
+## [2.3.1] - 2026-11-19
+
+### Additions
+
+- missing registries to dependabot.yml
+
+### Changes
+
+- build(deps): bump the kotlin group with 4 updates (#2)
+- build(deps): bump the actions group with 2 updates (#1)
+
+### Bugfixes
+
+- lock down kotlin version until next 2.4.3* release
+
+### Miscellaneous
+
+- reduce GitHub API calls when in template
+
 ## [2.3.0] - 2026-11-19
 
 ### Additions
@@ -278,7 +297,8 @@ _The major refactor_
 - move functionality to `build.gradle.kts`
 - updated RFG to 2.0.6
 
-[Unreleased]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.3.0...HEAD
+[Unreleased]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.3.1...HEAD
+[2.3.1]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.3.0...2.3.1
 [2.3.0]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.2.4...2.3.0
 [2.2.4]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.2.3...2.2.4
 [2.2.3]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.2.2...2.2.3
