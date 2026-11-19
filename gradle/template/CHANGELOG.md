@@ -15,6 +15,25 @@ Try to follow the [Common Changelog](https://common-changelog.org/) conventions.
 
 ### Miscellaneous
 
+## [2.3.0] - 2026-11-19
+
+### Additions
+
+- dependabot.yml as an experiment
+- custom dependency-submission workflow
+
+### Changes
+
+- remove unused properties from docs
+- refactor buildscripts to use new versions.toml
+- move versions from `gradle.properties` to `libs.versions.toml`
+
+### Bugfixes
+
+- README.md looking for wrong kotlin and gradleversion
+- custom dependency-submission workflow branch name
+- make gradlew executable
+
 ## [2.2.4] - 2026-11-18
 
 ### Additions
@@ -259,7 +278,8 @@ _The major refactor_
 - move functionality to `build.gradle.kts`
 - updated RFG to 2.0.6
 
-[Unreleased]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.2.4...HEAD
+[Unreleased]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.3.0...HEAD
+[2.3.0]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.2.4...2.3.0
 [2.2.4]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.2.3...2.2.4
 [2.2.3]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.2.2...2.2.3
 [2.2.2]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.2.1...2.2.2
