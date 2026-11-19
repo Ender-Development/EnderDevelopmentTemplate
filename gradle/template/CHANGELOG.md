@@ -15,6 +15,21 @@ Try to follow the [Common Changelog](https://common-changelog.org/) conventions.
 
 ### Miscellaneous
 
+## [2.3.2] - 2026-11-19
+
+### Changes
+
+- build(deps): bump mezz:jei from 4.37.2 to 4.38.1 (#5)
+- build(deps): bump futbol.rozbrajacz:rozutils from 0.4.0 to 0.5.0 (#4)
+
+### Bugfixes
+
+- deploy.yml using the wrong version
+
+### Miscellaneous
+
+- let dependency-submission.yml chmod gradlew
+
 ## [2.3.1] - 2026-11-19
 
 ### Additions
@@ -297,7 +312,8 @@ _The major refactor_
 - move functionality to `build.gradle.kts`
 - updated RFG to 2.0.6
 
-[Unreleased]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.3.1...HEAD
+[Unreleased]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.3.2...HEAD
+[2.3.2]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.3.1...2.3.2
 [2.3.1]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.3.0...2.3.1
 [2.3.0]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.2.4...2.3.0
 [2.2.4]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.2.3...2.2.4
