@@ -1,7 +1,7 @@
 {
     "CURSEFORGE_TOKEN": {
         "category": "\ud83d\udcf0 Publishing - CurseForge",
-        "description": "CurseForge API Token to publish builds straight from your IDE. [Read their API Documentation](https://support.curseforge.com/en/support/solutions/articles/9000197321-curseforge-api)"
+        "description": "CurseForge API Token to publish builds straight from your IDE. [Read their API Documentation](https://support.curseforge.com/en/support/solutions/articles/9000197321-curseforge-api) for general information or the [Mod Publish Plugin](https://modmuss50.github.io/mod-publish-plugin/platforms/curseforge/) ones."
     },
     "DEV_USERNAME": {
         "category": "\ud83c\udf0d Minecraft",
@@ -21,7 +21,7 @@
     },
     "MODRINTH_TOKEN": {
         "category": "\ud83d\udcf0 Publishing - Modrinth",
-        "description": "Modrinth API Token to publish builds straight from your IDE. The token must have the `CREATE_VERSION` and `PROJECT_WRITE` permissions. [Read their API Documentaion](https://docs.modrinth.com/)"
+        "description": "Modrinth API Token to publish builds straight from your IDE. The token must have the `CREATE_VERSION` and `PROJECT_WRITE` permissions. [Read their API Documentaion](https://docs.modrinth.com/) for general information or the [Mod Publish Plugin](https://modmuss50.github.io/mod-publish-plugin/platforms/modrinth/) ones."
     },
     "access_transformer_location": {
         "category": "\ud83d\udee0\ufe0f Utility - Access Transformers",
@@ -31,22 +31,6 @@
         "category": "\ud83d\udcf0 Publishing",
         "description": "Project names that should be added as 'required'. Mods with build-in integration except the ones from `dependencies.properties` are taken care of automatically."
     },
-    "assetmover_version": {
-        "category": "\ud83d\udd2d Integration - AssetMover",
-        "description": "Provided by the template via `gradle.properties`"
-    },
-    "betterconfig_version": {
-        "category": "\ud83d\udd2d Integration - Better Config",
-        "description": "Provided by the template via `gradle.properties`"
-    },
-    "catalyx_version": {
-        "category": "\ud83d\udd2d Integration - Catalyx",
-        "description": "Provided by the template via `gradle.properties`"
-    },
-    "configanytime_version": {
-        "category": "\ud83d\udd2d Integration - Configanytime",
-        "description": "Provided by the template via `gradle.properties`"
-    },
     "coremod_includes_mod": {
         "category": "\ud83d\udee0\ufe0f Utility - Core Mod",
         "description": "Change to false if your coremod doesn't have a `@Mod` annotation"
@@ -54,10 +38,6 @@
     "coremod_plugin_class_name": {
         "category": "\ud83d\udee0\ufe0f Utility - Core Mod",
         "description": "You MUST state a class name if you are making a coremod, the class should implement `IFMLLoadingPlugin`"
-    },
-    "crafttweaker_version": {
-        "category": "\ud83d\udd2d Integration - CraftTweaker",
-        "description": "Provided by the template via `gradle.properties`"
     },
     "curseforge_debug": {
         "category": "\ud83d\udcf0 Publishing - CurseForge",
@@ -79,21 +59,9 @@
         "category": "\ud83d\udee0\ufe0f Utility - .editorconfig",
         "description": "Must be on of [`roz`, `spotless`]."
     },
-    "expandedevents_version": {
-        "category": "\ud83d\udd2d Integration - Expanded Events",
-        "description": "Provided by the template via `gradle.properties`"
-    },
     "extra_jvm_args": {
         "category": "\ud83d\udea7 Internal",
         "description": "Additional arguments applied to the JVM when launching minecraft. Syntax: `-arg1=value1;-arg2=value2;...`"
-    },
-    "flexmark_version": {
-        "category": "\ud83d\udee0\ufe0f Utility - Formatting",
-        "description": "Provided by the template via `gradle.properties`"
-    },
-    "forgelin_continuous_version": {
-        "category": "\ud83d\udd2d Integration - Forgelin Continuous",
-        "description": "Provided by the template via `gradle.properties`"
     },
     "generate_javadocs_jar": {
         "category": "\ud83c\udfd7\ufe0f Build",
@@ -106,18 +74,6 @@
     "generate_source_jar": {
         "category": "\ud83c\udfd7\ufe0f Build",
         "description": "If true, Gradle will also generate a sources jar whenever you build your project."
-    },
-    "gradle_version": {
-        "category": "\ud83d\udea7 Internal",
-        "description": "Provided by the template via `gradle.properties`"
-    },
-    "greclipse_version": {
-        "category": "\ud83d\udee0\ufe0f Utility - Formatting",
-        "description": "Provided by the template via `gradle.properties`"
-    },
-    "groovyscript_version": {
-        "category": "\ud83d\udd2d Integration - GroovyScript",
-        "description": "Provided by the template via `gradle.properties`"
     },
     "grs_disable_cache": {
         "category": "\ud83d\udd2d Integration - GroovyScript",
@@ -147,14 +103,6 @@
         "category": "\ud83d\udd2d Integration - GroovyScript",
         "description": "Instead of using the GroovyScript folder in run/groovyscript, use the 'examples' folder instead."
     },
-    "gson_version": {
-        "category": "\ud83d\udee0\ufe0f Utility - Formatting",
-        "description": "Provided by the template via `gradle.properties`"
-    },
-    "hei_version": {
-        "category": "\ud83d\udd2d Integration - Had Enough Items",
-        "description": "Provided by the template via `gradle.properties`"
-    },
     "is_client_side": {
         "category": "\ud83d\udcf0 Publishing",
         "description": "Set to false if your mod is server-side only. Used to set environment on CurseForge and Modrinth."
@@ -166,18 +114,6 @@
     "is_server_side": {
         "category": "\ud83d\udcf0 Publishing",
         "description": "Set to false if your mod is client-side only. Used to set environment on CurseForge and Modrinth."
-    },
-    "jetbrains_annotation_version": {
-        "category": "\ud83d\udea7 Internal",
-        "description": "Provided by the template via `gradle.properties`"
-    },
-    "kotlin_version": {
-        "category": "\ud83d\udea7 Internal",
-        "description": "Provided by the template via `gradle.properties`"
-    },
-    "ktlint_version": {
-        "category": "\ud83d\udee0\ufe0f Utility - Formatting",
-        "description": "Provided by the template via `gradle.properties`"
     },
     "license": {
         "category": "\ud83d\udcd6 README.md",
@@ -267,21 +203,9 @@
         "category": "\ud83d\udcf0 Publishing - Modrinth",
         "description": "Allows Gradle to sync the README.md to the Modrinth project body"
     },
-    "modularui_version": {
-        "category": "\ud83d\udd2d Integration - ModularUI",
-        "description": "Provided by the template via `gradle.properties`"
-    },
-    "osxnarratorblocker_version": {
-        "category": "\ud83d\udea7 Internal",
-        "description": "Provided by the template via `gradle.properties`. Blocks the narrator for M1+ Macs to prevent crashes and issues."
-    },
     "partnership": {
         "category": "\ud83d\udcd6 README.md",
         "description": "A section about a partnership if there is one to promote. Use `<br>` for linebreak. An example can be found in the `project.properties`."
-    },
-    "prince_of_space_version": {
-        "category": "\ud83d\udee0\ufe0f Utility - Formatting",
-        "description": "Provided by the template via `gradle.properties`"
     },
     "publish_to_curseforge": {
         "category": "\ud83d\udcf0 Publishing - CurseForge",
@@ -295,10 +219,6 @@
         "category": "\ud83d\udcf0 Publishing - Modrinth",
         "description": "Enable features related to publishing to Modrinth"
     },
-    "reachfix_version": {
-        "category": "\ud83d\udd2d Integration - Reach Fix",
-        "description": "Provided by the template via `gradle.properties`"
-    },
     "readme": {
         "category": "\ud83d\udcd6 README.md",
         "description": "A longer description about the features of this mod. Use `<br>` for linebreak. An example can be found in the `project.properties`."
@@ -311,17 +231,9 @@
         "category": "\ud83d\uddfa\ufe0f Project",
         "description": "The root package for your mod's main class. Change this to your own package. This should match the directory structure of your main class."
     },
-    "strip_latest_forge_requirements_version": {
-        "category": "\ud83d\udea7 Internal",
-        "description": "Provided by the template via `gradle.properties`. Saves everyone a hassle when it comes to depending on mods, which require the _latest_ forge version."
-    },
     "tag_class_name": {
         "category": "\ud83d\udee0\ufe0f Utility - Tags",
         "description": "The path where the generated Tags class will be placed. Separators should be dots, e.g. `com.example.project`"
-    },
-    "top_version": {
-        "category": "\ud83d\udd2d Integration - TheOneSmeagle",
-        "description": "Provided by the template via `gradle.properties`"
     },
     "use_access_transformer": {
         "category": "\ud83d\udee0\ufe0f Utility - Access Transformers",

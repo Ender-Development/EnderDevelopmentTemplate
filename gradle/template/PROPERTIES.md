@@ -30,14 +30,6 @@ Convenient way to allow downloading of assets from official vanilla Minecraft se
 - **Required:** no
 - **Default:** `false`
 
-### `assetmover_version`
-
-Provided by the template via `gradle.properties`
-
-- **Type:** String
-- **Required:** yes
-- **Default:** none
-
 ## 🔭 Integration - Better Config
 
 ### `use_betterconfig`
@@ -47,14 +39,6 @@ BetterConfig extends Forge's annotation-based config system to support nested ar
 - **Type:** Boolean
 - **Required:** no
 - **Default:** `false`
-
-### `betterconfig_version`
-
-Provided by the template via `gradle.properties`
-
-- **Type:** String
-- **Required:** yes
-- **Default:** none
 
 ## 🔭 Integration - Catalyx
 
@@ -66,14 +50,6 @@ Kotlin library by [Ender-Development.org](https://ender-development.org) that pr
 - **Required:** no
 - **Default:** `false`
 
-### `catalyx_version`
-
-Provided by the template via `gradle.properties`
-
-- **Type:** String
-- **Required:** yes
-- **Default:** none
-
 ## 🔭 Integration - Configanytime
 
 ### `use_configanytime`
@@ -83,14 +59,6 @@ Allows Forge configurations to be setup at any point in time
 - **Type:** Boolean
 - **Required:** no
 - **Default:** `false`
-
-### `configanytime_version`
-
-Provided by the template via `gradle.properties`
-
-- **Type:** String
-- **Required:** yes
-- **Default:** none
 
 ## 🔭 Integration - CraftTweaker
 
@@ -102,14 +70,6 @@ Allows modpack creators to change recipes and other game objects via [ZenScript]
 - **Required:** no
 - **Default:** `false`
 
-### `crafttweaker_version`
-
-Provided by the template via `gradle.properties`
-
-- **Type:** String
-- **Required:** yes
-- **Default:** none
-
 ## 🔭 Integration - Expanded Events
 
 ### `use_expandedevents`
@@ -119,14 +79,6 @@ It adds a number of new event handlers to Minecraft. Aimed at developers who wan
 - **Type:** Boolean
 - **Required:** no
 - **Default:** `false`
-
-### `expandedevents_version`
-
-Provided by the template via `gradle.properties`
-
-- **Type:** String
-- **Required:** yes
-- **Default:** none
 
 ## 🔭 Integration - Forgelin Continuous
 
@@ -138,14 +90,6 @@ A library that provides Kotlin support for Minecraft Forge mods. Automatically e
 - **Required:** no
 - **Default:** `false`
 
-### `forgelin_continuous_version`
-
-Provided by the template via `gradle.properties`
-
-- **Type:** Evaluated String
-- **Required:** no
-- **Default:** none
-
 ## 🔭 Integration - GroovyScript
 
 ### `use_groovyscript`
@@ -155,14 +99,6 @@ Allows modpack creators to change recipes and other game objects via [Groovy](ht
 - **Type:** Boolean
 - **Required:** no
 - **Default:** `false`
-
-### `groovyscript_version`
-
-Provided by the template via `gradle.properties`
-
-- **Type:** String
-- **Required:** yes
-- **Default:** none
 
 ### `grs_disable_cache`
 
@@ -220,16 +156,6 @@ Instead of using the GroovyScript folder in run/groovyscript, use the 'examples'
 - **Required:** no
 - **Default:** `true`
 
-## 🔭 Integration - Had Enough Items
-
-### `hei_version`
-
-Provided by the template via `gradle.properties`
-
-- **Type:** String
-- **Required:** yes
-- **Default:** none
-
 ## 🔭 Integration - ModularUI
 
 ### `use_modularui`
@@ -239,14 +165,6 @@ A GUI library to ease the process of creating vanilla style GUIs. Docs: [Cleanro
 - **Type:** Boolean
 - **Required:** no
 - **Default:** `false`
-
-### `modularui_version`
-
-Provided by the template via `gradle.properties`
-
-- **Type:** String
-- **Required:** yes
-- **Default:** none
 
 ## 🔭 Integration - Reach Fix
 
@@ -258,65 +176,7 @@ Fix for vanillas hit detection and the reach attribute not being used for entiti
 - **Required:** no
 - **Default:** `false`
 
-### `reachfix_version`
-
-Provided by the template via `gradle.properties`
-
-- **Type:** String
-- **Required:** yes
-- **Default:** none
-
-## 🔭 Integration - TheOneSmeagle
-
-### `top_version`
-
-Provided by the template via `gradle.properties`
-
-- **Type:** String
-- **Required:** yes
-- **Default:** none
-
 ## 🚧 Internal
-
-### `gradle_version`
-
-Provided by the template via `gradle.properties`
-
-- **Type:** String
-- **Required:** yes
-- **Default:** none
-
-### `jetbrains_annotation_version`
-
-Provided by the template via `gradle.properties`
-
-- **Type:** String
-- **Required:** yes
-- **Default:** none
-
-### `kotlin_version`
-
-Provided by the template via `gradle.properties`
-
-- **Type:** String
-- **Required:** yes
-- **Default:** none
-
-### `osxnarratorblocker_version`
-
-Provided by the template via `gradle.properties`. Blocks the narrator for M1+ Macs to prevent crashes and issues.
-
-- **Type:** String
-- **Required:** yes
-- **Default:** none
-
-### `strip_latest_forge_requirements_version`
-
-Provided by the template via `gradle.properties`. Saves everyone a hassle when it comes to depending on mods, which require the _latest_ forge version.
-
-- **Type:** String
-- **Required:** yes
-- **Default:** none
 
 ### `extra_jvm_args`
 
@@ -509,7 +369,7 @@ CurseForge project ID must be the numerical ID and not the slug
 
 ### `CURSEFORGE_TOKEN`
 
-CurseForge API Token to publish builds straight from your IDE. [Read their API Documentation](https://support.curseforge.com/en/support/solutions/articles/9000197321-curseforge-api)
+CurseForge API Token to publish builds straight from your IDE. [Read their API Documentation](https://support.curseforge.com/en/support/solutions/articles/9000197321-curseforge-api) for general information or the [Mod Publish Plugin](https://modmuss50.github.io/mod-publish-plugin/platforms/curseforge/) ones.
 
 - **Type:** String
 - **Required:** no
@@ -596,7 +456,7 @@ Allows Gradle to sync the README.md to the Modrinth project body
 
 ### `MODRINTH_TOKEN`
 
-Modrinth API Token to publish builds straight from your IDE. The token must have the `CREATE_VERSION` and `PROJECT_WRITE` permissions. [Read their API Documentaion](https://docs.modrinth.com/)
+Modrinth API Token to publish builds straight from your IDE. The token must have the `CREATE_VERSION` and `PROJECT_WRITE` permissions. [Read their API Documentaion](https://docs.modrinth.com/) for general information or the [Mod Publish Plugin](https://modmuss50.github.io/mod-publish-plugin/platforms/modrinth/) ones.
 
 - **Type:** String
 - **Required:** no
@@ -709,46 +569,6 @@ The most powerful way to change java classes at runtime, it is however very prim
 
 ## 🛠️ Utility - Formatting
 
-### `flexmark_version`
-
-Provided by the template via `gradle.properties`
-
-- **Type:** String
-- **Required:** yes
-- **Default:** none
-
-### `greclipse_version`
-
-Provided by the template via `gradle.properties`
-
-- **Type:** String
-- **Required:** yes
-- **Default:** none
-
-### `gson_version`
-
-Provided by the template via `gradle.properties`
-
-- **Type:** String
-- **Required:** yes
-- **Default:** none
-
-### `ktlint_version`
-
-Provided by the template via `gradle.properties`
-
-- **Type:** String
-- **Required:** yes
-- **Default:** none
-
-### `prince_of_space_version`
-
-Provided by the template via `gradle.properties`
-
-- **Type:** String
-- **Required:** yes
-- **Default:** none
-
 ### `disable_spotless`
 
 Spotless is a code formatting plugin that can enforce a consistent code style across your project. [Documentation](https://github.com/diffplug/spotless/tree/main/plugin-gradle)
@@ -766,14 +586,6 @@ Powerful tool to do runtime description changes of classes. Docs: [SpongeForge W
 - **Type:** Evaluated String
 - **Required:** no
 - **Default:** `false`
-
-### `mixin_booter_version`
-
-Provided by the template via `gradle.properties`
-
-- **Type:** String
-- **Required:** yes
-- **Default:** none
 
 ### `generate_mixin_json`
 
