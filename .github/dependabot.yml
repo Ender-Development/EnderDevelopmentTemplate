@@ -1,7 +1,35 @@
 version: 2
+
+registries:
+  gtnh:
+    type: maven-repository
+    url: https://nexus.gtnewhorizons.com/repository/public/
+  sponge:
+    type: maven-repository
+    url: https://repo.spongepowered.org/maven
+  cleanroom:
+    type: maven-repository
+    url: https://maven.cleanroommc.com
+  ender-development:
+    type: maven-repository
+    url: https://maven.ender-development.org/
+  blamejared:
+    type: maven-repository
+    url: https://maven.blamejared.com/
+  redstudio:
+    type: maven-repository
+    url: https://repo.redstudio.dev/dev
+
 updates:
   - package-ecosystem: "gradle"
     directory: "/"
+    registries:
+      - gtnh
+      - sponge
+      - cleanroom
+      - ender-development
+      - blamejared
+      - redstudio
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 10
