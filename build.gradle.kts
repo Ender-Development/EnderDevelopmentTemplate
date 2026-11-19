@@ -26,9 +26,12 @@
 
 import com.diffplug.gradle.spotless.SpotlessExtension
 import com.diffplug.gradle.spotless.SpotlessTask
+import com.sun.imageio.plugins.jpeg.JPEG.vendor
 import groovy.json.JsonOutput
+import groovy.json.JsonOutput.prettyPrint
 import groovy.json.JsonSlurper
 import groovy.lang.GroovyShell
+import jdk.jfr.internal.JVM.include
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
@@ -41,6 +44,7 @@ import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import me.modmuss50.mpp.ReleaseType
 import me.modmuss50.mpp.platforms.modrinth.ModrinthEnvironment
+import org.gradle.cache.internal.streams.DefaultValueStore.encoding
 import org.gradle.internal.extensions.core.extra
 import org.gradle.plugins.ide.idea.model.IdeaLanguageLevel
 import org.jetbrains.changelog.Changelog
@@ -60,16 +64,16 @@ plugins {
     id("java")
     id("java-library")
     id("maven-publish")
-    id("org.jetbrains.gradle.plugin.idea-ext") version libs.versions.jetbrainsExtensionVersion
-    id("com.gtnewhorizons.retrofuturagradle") version libs.versions.retrofuturagradleVersion
-    kotlin("jvm") version libs.versions.kotlinVersion
-    kotlin("plugin.serialization") version libs.versions.kotlinVersion
+    alias(libs.plugins.jetbrains.idea.ext)
+    alias(libs.plugins.retrofuturagradle)
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.kotlin.serialization)
     // formatting
-    id("com.diffplug.spotless") version libs.versions.spotlessVersion
-    id("zone.rong.clearskies") version libs.versions.clearskiesVersion
+    alias(libs.plugins.spotless)
+    alias(libs.plugins.clearskies)
     // publishing
-    id("org.jetbrains.changelog") version libs.versions.jetbrainsChangelogVersion
-    id("me.modmuss50.mod-publish-plugin") version libs.versions.modPublishPluginVersion
+    alias(libs.plugins.jetbrains.changelog)
+    alias(libs.plugins.mod.publish)
 }
 
 val repoName = "Ender-Development/EnderDevelopmentTemplate"
@@ -83,6 +87,8 @@ data class ModDependency(
     val availableOnModrinth: Boolean = true,
     val optional: Boolean = false,
 )
+
+fun MinimalExternalModuleDependency.toCord(): String = "${this.group}:${this.name}:${this.version}"
 
 fun loadProps(filename: String): Properties =
     Properties().apply {
@@ -175,14 +181,18 @@ fun console(
 fun git(vararg args: String): String = console("git", *args)
 
 val isTemplateRepo = git("remote").split("\n").any { git("remote", "get-url", it).contains(repoName) }
-val versionGradle = getProp("gradle_version")
+val versionGradle =
+    console("java", "-jar", "gradle/wrapper/gradle-wrapper.jar", "-v")
+        .split("\n")
+        .getOrNull(2)
+        ?.split(" ")
+        ?.lastOrNull() ?: GradleVersion.current().toString()
 val javaVersion =
     console("java", "--version")
         .split("\n")
         .firstOrNull()
         ?.split(" ")
         ?.getOrNull(1) ?: JavaVersion.current()
-val kotlinVersion = getProp("kotlin_version")
 val useKotlin = getProp("use_kotlin", false).toBoolean()
 val editorconfig = getProp("editorconfig", "spotless")
 val minecraftVersion = getProp("minecraft_version", "1.12.2")
@@ -204,6 +214,20 @@ val useAccessTransformer = getProp("use_access_transformer", true).toBoolean() &
 
 val useTags = getProp("use_tags", true).toBoolean() && file("tags.properties").exists()
 val tagClassName = evalProp("tag_class_name", $$"${root_package}.${mod_id}.Tags")
+val defaultTags =
+    mapOf(
+        "KOTLIN_VERSION" to libs.versions.kotlin.get(),
+        "FORGELIN_VERSION" to "${libs.versions.kotlin.get()}.0",
+        "KOTLIN_LANGUAGE_ADAPTER" to "io.github.chaosunity.forgelin.KotlinAdapter",
+        "GROOVYSCRIPT_VERSION" to libs.versions.groovyscript.get(),
+        "CRAFTTWEAKER_VERSION" to libs.versions.crafttweaker.get(),
+        "HADENOUGHITEMS_VERSION" to libs.versions.hei.get(),
+        "THEONEPROBE_VERSION" to libs.versions.top.get(),
+        "CATALYX_VERSION" to libs.versions.catalyx.get(),
+        "CONFIGANYTIME_VERSION" to libs.versions.configanytime.get(),
+        "ASSETMOVER_VERSION" to libs.versions.assetmover.get(),
+        "MIXINBOOTER_VERSION" to libs.versions.mixinBooter.get(),
+    )
 
 val isCoreMod = getProp("is_coremod", false).toBoolean()
 
@@ -233,16 +257,16 @@ val additionalDependencies = getPropList("additional_dependencies", " ")
 val modDependencies =
     listOf(
         ModDependency("mixin-booter", useMixins, ""),
-        ModDependency("assetmover", useAssetMover, "com.cleanroommc:assetmover:${getProp("assetmover_version")}"),
-        ModDependency("configanytime", useConfigAnytime, "com.cleanroommc:configanytime:${getProp("configanytime_version")}"),
-        ModDependency("better-config", useBetterConfig, "io.github.meldexun:betterconfig:1.12.2-${getProp("betterconfig_version")}"),
+        ModDependency("assetmover", useAssetMover, libs.assetmover.get().toCord()),
+        ModDependency("configanytime", useConfigAnytime, libs.configanytime.get().toCord()),
+        ModDependency("better-config", useBetterConfig, libs.betterconfig.get().toCord()),
         ModDependency("crafttweaker", useCraftTweaker, "", optional = true),
-        ModDependency("groovyscript", useGroovyScript, "com.cleanroommc:groovyscript:${getProp("groovyscript_version")}", optional = true),
-        ModDependency("forgelin-continuous", useForgelinContinuous, "T#io.github.chaosunity.forgelin:Forgelin-Continuous:${evalProp("forgelin_continuous_version")}"),
-        ModDependency("catalyx", useCatalyx, "C#org.ender_development:catalyx:${getProp("catalyx_version")}"),
-        ModDependency("modularui-uf", useModularUi, "D#curse.maven:modularui-uf-1663175:${getProp("modularui_version")}"),
-        ModDependency("reach-fix", useReachFix, "D#curse.maven:reach-fix-556777:${getProp("reachfix_version")}"),
-        ModDependency("expanded-events", useExpandedEvents, "D#curse.maven:expanded-events-1396395:${getProp("expandedevents_version")}", availableOnModrinth = false),
+        ModDependency("groovyscript", useGroovyScript, libs.groovyscript.get().toCord(), optional = true),
+        ModDependency("forgelin-continuous", useForgelinContinuous, "T#io.github.chaosunity.forgelin:Forgelin-Continuous:${libs.versions.kotlin.get()}.0"),
+        ModDependency("catalyx", useCatalyx, "C#${libs.catalyx.get().toCord()}"),
+        ModDependency("modularui-uf", useModularUi, "D#curse.maven:modularui-uf-1663175:${libs.versions.modularui}"),
+        ModDependency("reach-fix", useReachFix, "D#curse.maven:reach-fix-556777:${libs.versions.reachfix}"),
+        ModDependency("expanded-events", useExpandedEvents, "D#curse.maven:expanded-events-1396395:${libs.versions.expandedevents}", availableOnModrinth = false),
     )
 
 val useSpotless = getProp("disable_spotless", false).toBoolean()
@@ -268,8 +292,8 @@ buildscript {
         google()
     }
     dependencies {
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:${property("kotlin_version")}")
-        classpath("org.jetbrains.kotlinx:kotlinx-serialization-json:${property("kotlinx_serialization_version")}")
+        classpath(libs.kotlin.gradle.plugin)
+        classpath(libs.kotlinx.serialization.json)
     }
 }
 
@@ -286,29 +310,28 @@ configurations {
 }
 
 dependencies {
-    runtimeOnly("com.cleanroommc:strip-latest-forge-requirements:${getProp("strip_latest_forge_requirements_version")}")
-    runtimeOnly("com.cleanroommc:osxnarratorblocker:${getProp("osxnarratorblocker_version")}")
+    runtimeOnly(libs.strip.latest.forge.requirements)
+    runtimeOnly(libs.osxnarratorblocker)
 
-    if (useKotlin) runtimeOnly("futbol.rozbrajacz:rozutils:0.4.0") { isTransitive = false }
+    if (useKotlin) runtimeOnly(libs.rozutils) { isTransitive = false }
 
-    runtimeOnly("curse.maven:scalingguis-319656:5150678")
+    runtimeOnly("curse.maven:scalingguis-319656:${libs.versions.scalingguis.get()}")
 
-    val annotation = "org.jetbrains:annotations:${getProp("jetbrains_annotation_version")}"
-    compileOnly(annotation)
-    annotationProcessor(annotation)
+    compileOnly(libs.jetbrains.annotations)
+    annotationProcessor(libs.jetbrains.annotations)
 
-    val mixin: String = modUtils.enableMixins("zone.rong:mixinbooter:${getProp("mixin_booter_version")}", mixinRefMap) as String
+    val mixin: String = modUtils.enableMixins(libs.mixinbooter.get().toCord(), mixinRefMap) as String
     implementation(mixin) { isTransitive = false }
     annotationProcessor(mixin)
     add("mixinAgent", mixin) { isTransitive = false }
 
-    implementation("mezz:jei:${getProp("hei_version")}")
-    implementation(rfg.deobf("curse.maven:theonesmeagle-977883:${getProp("top_version")}"))
+    implementation(libs.hei)
+    implementation(rfg.deobf("curse.maven:theonesmeagle-977883:${libs.versions.top.get()}"))
 
     if (useCraftTweaker) {
-        implementation("CraftTweaker2:CraftTweaker2-API:${getProp("crafttweaker_version")}")
-        implementation("CraftTweaker2:ZenScript:${getProp("crafttweaker_version")}")
-        implementation("CraftTweaker2:CraftTweaker2-MC1120-Main:1.12-${getProp("crafttweaker_version")}")
+        implementation(libs.crafttweaker.api)
+        implementation(libs.crafttweaker.zenscript)
+        implementation("CraftTweaker2:CraftTweaker2-MC1120-Main:1.12-${libs.versions.crafttweaker.get()}")
     }
 
     val modDeps = modDependencies.map { if (it.flag) it.dep else "" } + loadProps("dependencies.properties").values.map { it.toString().trim() }
@@ -593,6 +616,13 @@ repositories {
             includeGroup("maven.modrinth")
         }
     }
+    maven {
+        name = "Red Studio"
+        url = uri("https://repo.redstudio.dev/dev")
+        content {
+            includeGroup("dev.redstudio")
+        }
+    }
     // CraftTweaker, ContentTweaker, BWM, JEI, ...
     maven {
         name = "BlameJared's Maven"
@@ -661,7 +691,6 @@ configure<SpotlessExtension> {
         )
         // at most one blank line in a row
         replaceRegex("collapse blank lines", "\\n{3,}", "\n\n")
-
         trimTrailingWhitespace()
         endWithNewline()
     }
@@ -672,6 +701,8 @@ configure<SpotlessExtension> {
         properties {
             putAll(extra.properties.mapValues { evalPropValue(it.value.toString()) })
             put("javaVersion", javaVersion)
+            put("kotlinVersion", libs.versions.kotlin.get())
+            put("gradleVersion", project.gradle.gradleVersion)
             put("repoName", repoName)
             put("mavenUrl", if (publishToMaven) mavenUrl else "")
             put("LICENSE", rmLicense)
@@ -688,13 +719,13 @@ configure<SpotlessExtension> {
     }
     flexmark {
         target(".github/**/*.md", "docs/**/*.md", "gradle/**/*.md", "src/*/resources/**/*.md", "CHANGELOG.md")
-        flexmark(getProp("flexmark_version"))
+        flexmark(libs.versions.flexmark.get())
         trimTrailingWhitespace()
         endWithNewline()
     }
     json {
         target("src/*/resources/**/*.json", "src/*/resources/*.info", "src/*/resources/**/*.mcmeta", "examples/**/*.json", "run/groovy/**/*.json")
-        gson().indentWithSpaces(2).sortByKeys().version(getProp("gson_version"))
+        gson().indentWithSpaces(2).sortByKeys().version(libs.versions.gson.get())
     }
     shell {
         target("gradlew")
@@ -703,11 +734,16 @@ configure<SpotlessExtension> {
         target("examples/**/*.groovy", "run/groovy/**/*.groovy")
         importOrder()
         removeSemicolons()
-        greclipse(getProp("greclipse_version")).configProperties(
+        greclipse(libs.versions.greclipse.get()).configProperties(
             "org.eclipse.jdt.core.formatter.tabulation.char=space",
             "org.eclipse.jdt.core.formatter.tabulation.size=2",
             "org.eclipse.jdt.core.formatter.indent_empty_lines=false",
         )
+    }
+    yaml {
+        target(".github/**/*.yml")
+        trimTrailingWhitespace()
+        endWithNewline()
     }
     if (editorconfig != "spotless") return@configure
 
@@ -724,7 +760,7 @@ configure<SpotlessExtension> {
         removeUnusedImports()
         forbidWildcardImports()
         shortenFullyQualifiedTypes()
-        princeOfSpace(getProp("prince_of_space_version"))
+        princeOfSpace(libs.versions.princeOfSpace.get())
             .indentStyle("SPACES")
             .indentSize(4)
             .lineLength(200)
@@ -736,12 +772,12 @@ configure<SpotlessExtension> {
     }
     kotlin {
         target("src/main/kotlin/**/*.kt")
-        ktlint(getProp("ktlint_version")).editorConfigOverride(mapOf("ktlint_standard_package-name" to "disabled"))
+        ktlint(libs.versions.ktlint.get()).editorConfigOverride(mapOf("ktlint_standard_package-name" to "disabled"))
         licenseHeader(header)
     }
     kotlinGradle {
         target("*.gradle.kts")
-        ktlint(getProp("ktlint_version"))
+        ktlint(libs.versions.ktlint.get())
     }
 }
 
@@ -874,6 +910,9 @@ tasks.register("createReference") {
                 appendLine(" */")
                 appendLine("@Suppress(\"UNUSED\")")
                 appendLine("object ${objectName}Reference {")
+                appendLine("$indent// buildscript defaults")
+                defaultTags.forEach { (key, value) -> appendLine("${indent}const val $key = \"$value\"") }
+                appendLine("$indent// project-specific tags")
                 tags.forEach { (key, value) ->
                     val eval = (if (value is String) evalPropValue(value) else value).toString()
                     val value = if (eval.toDoubleOrNull() != null) eval else "\"${eval.replace("\"", "\\\"")}\""
