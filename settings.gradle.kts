@@ -57,17 +57,6 @@ extensions.configure<ReckonExtension> {
     setStageCalc(calcStageFromProp()) // -Preckon.stage=final
 }
 
-dependencyResolutionManagement {
-    versionCatalogs {
-        create("libs") {
-            val patternSnake = Regex("_([a-z])")
-            settings.extra.properties
-                .filter { it.value.toString().isNotBlank() && it.key.endsWith("_version") }
-                .forEach { (k, v) -> version(k.replace(patternSnake) { it.value.last().uppercase() }, settings.extra.properties[k].toString()) }
-        }
-    }
-}
-
 val pp =
     Properties().apply {
         val f = file("project.properties")

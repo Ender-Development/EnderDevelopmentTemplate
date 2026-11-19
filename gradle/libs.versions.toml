@@ -1,0 +1,76 @@
+[versions]
+# Build tooling
+retrofuturagradle = "2.0.6"
+kotlin = "2.4.20"
+kotlinxSerialization = "1.12.0"
+jetbrainsExtension = "1.4.1"
+jetbrainsChangelog = "2.5.0"
+modPublishPlugin = "2.2.1"
+spotless = "8.11.0"
+clearskies = "2.0.0"
+
+# Spotless / formatting
+flexmark = "0.64.8"
+ktlint = "1.8.0"
+princeOfSpace = "2.0.0"
+greclipse = "4.41"  # Eclipse formatter version, not a Maven artifact; bump manually
+
+# Build/compile-time libraries
+jetbrainsAnnotation = "26.1.0"
+gson = "2.15.0"
+
+# In-game dependencies
+stripLatestForgeRequirements = "1.0"
+osxnarratorblocker = "1.0"
+assetmover = "3.0.1"
+betterconfig = "1.12.2-1.3.0"
+catalyx = "0.1.0"
+configanytime = "3.0"
+crafttweaker = "4.1.20.718"
+groovyscript = "1.5.0"
+hei = "4.37.2"
+mixinBooter = "12.3"
+rozutils = "0.4.0"
+
+# CurseMaven file IDs, not versions. Not trackable.
+top = "7095096"
+reachfix = "6327271"
+expandedevents = "9470006"
+modularui = "9009826"
+scalingguis = "5150678"
+
+[libraries]
+# Build/compile-time
+jetbrains-annotations = { module = "org.jetbrains:annotations", version.ref = "jetbrainsAnnotation" }
+kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
+
+# Only used as version strings in the spotless config; declared so Dependabot sees them
+gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
+ktlint = { module = "com.pinterest.ktlint:ktlint-cli", version.ref = "ktlint" }
+flexmark = { module = "com.vladsch.flexmark:flexmark-all", version.ref = "flexmark" }
+prince-of-space = { module = "io.github.agustafson.princeofspace:prince-of-space-core", version = "princeOfSpace" }
+
+# In-game
+strip-latest-forge-requirements = { module = "com.cleanroommc:strip-latest-forge-requirements", version.ref = "stripLatestForgeRequirements" }
+osxnarratorblocker = { module = "com.cleanroommc:osxnarratorblocker", version.ref = "osxnarratorblocker" }
+assetmover = { module = "com.cleanroommc:assetmover", version.ref = "assetmover" }
+betterconfig = { module = "io.github.meldexun:betterconfig", version.ref = "betterconfig" }
+catalyx = { module = "org.ender_development:catalyx", version.ref = "catalyx" }
+configanytime = { module = "com.cleanroommc:configanytime", version.ref = "configanytime" }
+crafttweaker-api = { module = "CraftTweaker2:CraftTweaker2-API", version.ref = "crafttweaker" }
+crafttweaker-zenscript = { module = "CraftTweaker2:ZenScript", version.ref = "crafttweaker" }
+groovyscript = { module = "com.cleanroommc:groovyscript", version.ref = "groovyscript" }
+hei = { module = "mezz:jei", version.ref = "hei" }
+mixinbooter = { module = "zone.rong:mixinbooter", version.ref = "mixinBooter" }
+rozutils = { module = "futbol.rozbrajacz:rozutils", version.ref = "rozutils" }
+
+[plugins]
+retrofuturagradle = { id = "com.gtnewhorizons.retrofuturagradle", version.ref = "retrofuturagradle" }
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+jetbrains-idea-ext = { id = "org.jetbrains.gradle.plugin.idea-ext", version.ref = "jetbrainsExtension" }
+jetbrains-changelog = { id = "org.jetbrains.changelog", version.ref = "jetbrainsChangelog" }
+mod-publish = { id = "me.modmuss50.mod-publish-plugin", version.ref = "modPublishPlugin" }
+spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
+clearskies = { id = "zone.rong.clearskies", version.ref = "clearskies" }
