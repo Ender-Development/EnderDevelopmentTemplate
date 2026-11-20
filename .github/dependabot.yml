@@ -36,8 +36,8 @@ updates:
           - "org.jetbrains.kotlinx*"
     ignore:
       - dependency-name: "curse.maven:*"
-      - dependency-name: "org.jetbrains.kotlin:*"
-        versions: [">=2.4.21, <2.4.30"]
+      - dependency-name: "org.jetbrains.kotlin*"
+        update-types: ["version-update:semver-patch"]
 
   - package-ecosystem: "github-actions"
     directory: "/"
