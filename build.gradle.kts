@@ -275,7 +275,9 @@ val rmLicense = getProp("license", "All Rights Reserved")
 val rmContent = evalProp("readme", $$"${mod_description}")
 val rmPartnership = getProp("partnership", "")
 
-val moddexProject = moddexLookup(getProp("moddex_id", ""), getProp("curseforge_id", ""), getProp("modrinth_id", ""))
+val moddexProject: ModdexProject? by lazy {
+    moddexLookup(getProp("moddex_id", ""), getProp("curseforge_id", ""), getProp("modrinth_id", ""))
+}
 val isPublished = moddexProject != null
 val publishToCurseForge = getProp("publish_to_curseforge", false).toBoolean() && isPublished && moddexProject!!.curseforge != null
 val publishToModrinth = getProp("publish_to_modrinth", false).toBoolean() && isPublished && moddexProject!!.modrinth != null
@@ -714,7 +716,7 @@ configure<SpotlessExtension> {
             put("CURSEFORGE", moddexProject?.curseforge?.id ?: "")
             put("CURSEFORGE_LINK", moddexProject?.curseforge?.url ?: "")
             put("MODDEX", moddexProject?.slug ?: "")
-            put("REVIEW", if (moddexProject?.rating != null) "${moddexProject.rating}%2F5.0" else "Rate_on_ModDex_%E2%99%A5")
+            put("REVIEW", if (moddexProject?.rating != null) "${moddexProject!!.rating}%2F5.0" else "Rate_on_ModDex_%E2%99%A5")
         }
     }
     flexmark {
