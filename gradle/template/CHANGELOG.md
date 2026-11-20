@@ -15,6 +15,24 @@ Try to follow the [Common Changelog](https://common-changelog.org/) conventions.
 
 ### Miscellaneous
 
+## [2.3.3] - 2026-11-20
+
+### Additions
+
+- version gh workflows
+
+### Changes
+
+- remove non-essential dependabot registries
+- remove non-essential maven repositories
+- Update deploy.yml
+
+### Miscellaneous
+
+- update maven example in `dependencies.properties`
+- formatting
+- lazy load a few variables
+
 ## [2.3.2] - 2026-11-19
 
 ### Changes
@@ -312,7 +330,8 @@ _The major refactor_
 - move functionality to `build.gradle.kts`
 - updated RFG to 2.0.6
 
-[Unreleased]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.3.2...HEAD
+[Unreleased]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.3.3...HEAD
+[2.3.3]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.3.2...2.3.3
 [2.3.2]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.3.1...2.3.2
 [2.3.1]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.3.0...2.3.1
 [2.3.0]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.2.4...2.3.0
