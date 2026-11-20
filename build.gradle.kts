@@ -180,19 +180,24 @@ fun console(
 
 fun git(vararg args: String): String = console("git", *args)
 
-val isTemplateRepo = git("remote").split("\n").any { git("remote", "get-url", it).contains(repoName) }
-val versionGradle =
+val isTemplateRepo: Boolean by lazy {
+    git("remote").split("\n").any { git("remote", "get-url", it).contains(repoName) }
+}
+
+val versionGradle: String by lazy {
     console("java", "-jar", "gradle/wrapper/gradle-wrapper.jar", "-v")
         .split("\n")
         .getOrNull(2)
         ?.split(" ")
         ?.lastOrNull() ?: GradleVersion.current().toString()
-val javaVersion =
+}
+val javaVersion: String by lazy {
     console("java", "--version")
         .split("\n")
         .firstOrNull()
         ?.split(" ")
-        ?.getOrNull(1) ?: JavaVersion.current()
+        ?.getOrNull(1) ?: JavaVersion.current().toString()
+}
 val useKotlin = getProp("use_kotlin", false).toBoolean()
 val editorconfig = getProp("editorconfig", "spotless")
 val minecraftVersion = getProp("minecraft_version", "1.12.2")
