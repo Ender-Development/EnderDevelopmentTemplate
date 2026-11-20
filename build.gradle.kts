@@ -438,7 +438,7 @@ idea {
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(8)
+        languageVersion = JavaLanguageVersion.of(25)
         vendor = JvmVendorSpec.AZUL
     }
     if (getProp("generate_source_jar", true).toBoolean()) withSourcesJar()
@@ -446,7 +446,7 @@ java {
 }
 
 kotlin {
-    jvmToolchain(8)
+    jvmToolchain(25)
     compilerOptions {
         extraWarnings = true
     }
