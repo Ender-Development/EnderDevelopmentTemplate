@@ -4,9 +4,6 @@ registries:
   gtnh:
     type: maven-repository
     url: https://nexus.gtnewhorizons.com/repository/public/
-  sponge:
-    type: maven-repository
-    url: https://repo.spongepowered.org/maven
   cleanroom:
     type: maven-repository
     url: https://maven.cleanroommc.com
@@ -25,7 +22,6 @@ updates:
     directory: "/"
     registries:
       - gtnh
-      - sponge
       - cleanroom
       - ender-development
       - blamejared
