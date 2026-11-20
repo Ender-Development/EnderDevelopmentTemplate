@@ -15,6 +15,20 @@ Try to follow the [Common Changelog](https://common-changelog.org/) conventions.
 
 ### Miscellaneous
 
+## [2.3.4] - 2026-11-20
+
+### Changes
+
+- build(deps): bump zone.rong:mixinbooter from 12.3 to 12.4 (#7)
+
+### Bugfixes
+
+- set jvmToolchain version to 25 instead of 8
+
+### Miscellaneous
+
+- ignore all kotlin patches via dependabot.yml
+
 ## [2.3.3] - 2026-11-20
 
 ### Additions
@@ -330,7 +344,8 @@ _The major refactor_
 - move functionality to `build.gradle.kts`
 - updated RFG to 2.0.6
 
-[Unreleased]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.3.3...HEAD
+[Unreleased]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.3.4...HEAD
+[2.3.4]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.3.3...2.3.4
 [2.3.3]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.3.2...2.3.3
 [2.3.2]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.3.1...2.3.2
 [2.3.1]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.3.0...2.3.1
