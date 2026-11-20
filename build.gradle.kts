@@ -1097,6 +1097,8 @@ val versionedFiles =
         VersionedFile("README.md", "<!-- v", " -->"),
         VersionedFile(".gitignore", "# v", userSectionMarker = "# ---- USER SECTION"),
         VersionedFile(".gitattributes", "# v", userSectionMarker = "# ---- USER SECTION"),
+        VersionedFile(".github/workflows/dependency-submission.yml", "# v"),
+        VersionedFile(".github/workflows/deploy.yml", "# v"),
     )
 
 class PendingUpdate(

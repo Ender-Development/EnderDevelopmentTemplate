@@ -1,3 +1,5 @@
+# v2.3.2
+
 # A deployment template that works out of the box
 # It supports these objectives:
 # - Deploy to Maven (Build Job) [Secrets: MAVEN_USERNAME, MAVEN_PASSWORD]
