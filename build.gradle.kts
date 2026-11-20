@@ -1184,11 +1184,77 @@ tasks.register("checkBuildScriptLatest") {
     doLast { logger.lifecycle("Latest Buildscript Release: ${resolveLatestTag()}") }
 }
 
+val currentGradleVersion: String = gradle.gradleVersion
+
+val latestGradleVersion: String by lazy {
+    fetchLatestGradleVersion()
+        ?: throw GradleException("Could not determine the latest Gradle version.")
+}
+
+fun fetchLatestGradleVersion(): String? =
+    try {
+        val json = URI("https://services.gradle.org/versions/current").toURL().readText()
+        Regex("\"version\"\\s*:\\s*\"([^\"]+)\"").find(json)?.groupValues?.get(1)
+    } catch (_: Exception) {
+        null
+    }
+
+fun wrapperArgs(): List<String> =
+    listOf(
+        "-classpath",
+        rootProject.file("gradle/wrapper/gradle-wrapper.jar").absolutePath,
+        "org.gradle.wrapper.GradleWrapperMain",
+        "wrapper",
+        "--gradle-version",
+        latestGradleVersion,
+        "--distribution-type",
+        "bin",
+    )
+
+tasks.register("checkGradleUpdate") {
+    group = "ender-development"
+    description = "Checks whether a newer Gradle release is available."
+    notCompatibleWithConfigurationCache("Performs a network lookup")
+    doLast {
+        val latest = fetchLatestGradleVersion()
+        when {
+            latest == null -> logger.warn("Could not check for a newer Gradle version.")
+            latest != currentGradleVersion -> logger.lifecycle("Gradle $latest is available (you're on $currentGradleVersion). Run `./gradlew updateGradle` to upgrade.")
+            else -> logger.lifecycle("Gradle is up to date ($currentGradleVersion).")
+        }
+    }
+}
+
+tasks.register<Exec>("updateGradleProperties") {
+    group = "ender-development"
+    description = "Old wrapper rewrites gradle-wrapper.properties"
+    notCompatibleWithConfigurationCache("Performs a network lookup")
+    workingDir = rootDir
+    executable = File(System.getProperty("java.home"), "bin/java").absolutePath
+    argumentProviders.add(CommandLineArgumentProvider { wrapperArgs() })
+}
+
+tasks.register<Exec>("refreshGradleWrapper") {
+    group = "ender-development"
+    description = "re-run so the new Gradle version regenerates the jar and scripts"
+    notCompatibleWithConfigurationCache("Performs a network lookup")
+    mustRunAfter("updateGradleProperties")
+    workingDir = rootDir
+    executable = File(System.getProperty("java.home"), "bin/java").absolutePath
+    argumentProviders.add(CommandLineArgumentProvider { wrapperArgs() })
+}
+
+tasks.register("updateGradle") {
+    group = "build setup"
+    description = "Updates the Gradle wrapper to the latest release (properties, jar and scripts)."
+    dependsOn("updateGradleProperties", "refreshGradleWrapper")
+}
+
 tasks.register("checkBuildScriptUpdate") {
     group = "ender-development"
     description = "Checks whether a newer build script version is available (does not modify anything)"
     onlyIf { !isTemplateRepo }
-    dependsOn("checkBuildScriptLatest")
+    dependsOn("checkBuildScriptLatest", "checkGradleUpdate")
     doLast {
         val updates = collectUpdates()
         if (updates.isEmpty()) {
@@ -1197,20 +1263,13 @@ tasks.register("checkBuildScriptUpdate") {
             logger.lifecycle("Build script update available! Run './gradlew updateBuildScript'")
             for (u in updates) logger.lifecycle("  ${u.path} (${u.reason})")
         }
-        if (gradle.gradleVersion != versionGradle) {
-            logger.lifecycle("updateBuildScript can also update Gradle from ${gradle.gradleVersion} to $versionGradle")
-        }
     }
 }
 
 tasks.register("updateBuildScript") {
     group = "ender-development"
     description = "Updates build.gradle.kts, gradle.properties and gradle/template/** to the latest version"
-
-    if (gradle.gradleVersion != versionGradle) {
-        dependsOn("wrapper")
-    }
-
+    dependsOn("updateGradle")
     doLast {
         val updates = collectUpdates()
         if (updates.isEmpty()) {
