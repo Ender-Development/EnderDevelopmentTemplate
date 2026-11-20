@@ -961,14 +961,10 @@ tasks.register("switchEditorConfig") {
 tasks.register("createIJScope") {
     group = "ender-development"
     description = "Creates the IntelliJ scope file for the mod sources"
-
-    val outputFile = layout.projectDirectory.file(".idea/scopes/Mod_Source.xml")
-
-    inputs.property("modName", modName)
-    outputs.file(outputFile)
-
     onlyIf { !isTemplateRepo }
-
+    inputs.property("modName", modName)
+    val outputFile = layout.projectDirectory.file(".idea/scopes/Mod_Source.xml")
+    outputs.file(outputFile)
     doLast {
         val filtered = modName.filter(Char::isLetterOrDigit)
 
@@ -1250,7 +1246,6 @@ tasks.register("checkBuildScriptLatest") {
 tasks.register("checkBuildScriptUpdate") {
     group = "ender-development"
     description = "Checks whether a newer build script version is available (does not modify anything)"
-
     onlyIf { !isTemplateRepo }
     dependsOn("checkBuildScriptLatest")
     doLast {
