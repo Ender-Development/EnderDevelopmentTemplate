@@ -26,9 +26,12 @@
 
 import com.diffplug.gradle.spotless.SpotlessExtension
 import com.diffplug.gradle.spotless.SpotlessTask
+import com.sun.imageio.plugins.jpeg.JPEG.vendor
 import groovy.json.JsonOutput
+import groovy.json.JsonOutput.prettyPrint
 import groovy.json.JsonSlurper
 import groovy.lang.GroovyShell
+import jdk.jfr.internal.JVM.include
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
@@ -41,6 +44,7 @@ import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import me.modmuss50.mpp.ReleaseType
 import me.modmuss50.mpp.platforms.modrinth.ModrinthEnvironment
+import org.gradle.cache.internal.streams.DefaultValueStore.encoding
 import org.gradle.internal.extensions.core.extra
 import org.gradle.plugins.ide.idea.model.IdeaLanguageLevel
 import org.jetbrains.changelog.Changelog
@@ -56,6 +60,7 @@ import java.net.URLEncoder
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import java.util.Properties
+import kotlin.text.isLetterOrDigit
 
 plugins {
     id("java")
@@ -71,6 +76,95 @@ plugins {
     // publishing
     alias(libs.plugins.jetbrains.changelog)
     alias(libs.plugins.mod.publish)
+}
+
+val template =
+    object {
+        val REPO = "Ender-Development/EnderDevelopmentTemplate"
+        val DIRECTORY = "gradle/template"
+    }
+
+val props = PropertyManager()
+
+class PropertyManager {
+    /**
+     * Loads properties from the specified property file and returns them as a Properties object.
+     * @param filePath The path of the properties file to load. e.g. `project.properties`
+     * @return A [Properties] object containing the loaded properties
+     * @throws GradleException when the given file doesn't exist.
+     */
+    fun load(filePath: String): Properties =
+        Properties().takeIf { file(filePath).exists() }?.apply { file(filePath).inputStream().use { load(it) } } ?: throw GradleException("File $filePath doesn't exist!")
+
+    /**
+     * Tries to get the value of the given property key.
+     * @param key name of the property you want to get
+     * @param default what else should be used when the key can't be found
+     * @return An evaluated [String] of the value
+     * @throws GradleException when the key can't be found and no default is defined
+     */
+    fun get(
+        key: String,
+        default: Any? = null,
+    ): String =
+        eval(
+            extra.takeIf { it.has(key) }?.get(key)?.toString()
+                ?: findProperty(key)?.toString()
+                ?: default?.toString()
+                ?: throw GradleException("Property $key needs to be specified!"),
+        )
+
+    /**
+     * Gets the value of a property key as list otherwise returns an empty one.
+     * @param key name of the property to get
+     * @param delimiter what separates entries in the value
+     * @return An evaluated [MutableList] of the value
+     */
+    fun list(
+        key: String,
+        delimiter: String = " ",
+    ): MutableList<String> =
+        try {
+            get(key)
+                .split(delimiter)
+                .filter { it.isNotEmpty() }
+                .map(String::trim)
+                .toMutableList()
+        } catch (e: GradleException) {
+            logger.lifecycle("Error while loading $key as list: ${e.message}", e)
+            mutableListOf()
+        }
+
+    /**
+     * Gets the value of a property from an environment variable.
+     * @param key name of the property to get
+     * @return Either the value of the environment variable or an evaluated property with the same name
+     */
+    fun env(key: String): String = System.getenv(name) ?: get(name, "")
+
+    private fun eval(input: String): String {
+        if (input.startsWith($$"${{") && input.endsWith("}}")) {
+            val expression = substitute((input.substring(3, input.length - 2).trim()))
+            try {
+                return GroovyShell().evaluate(expression).toString()
+            } catch (e: Exception) {
+                throw GradleException("Failed to evaluate expression '$expression' in property evaluation.", e)
+            }
+        }
+        return substitute(input)
+    }
+
+    private fun substitute(input: String): String {
+        var result = input
+        val template = "\\$\\{([^}]+)}".toRegex()
+        template.findAll(input).forEach {
+            val placeholder = it.value
+            val key = it.groupValues[1]
+            val replacement = if (key == "mod_version") modVersion else get(key)
+            result = result.replace(placeholder, replacement)
+        }
+        return result
+    }
 }
 
 val repoName = "Ender-Development/EnderDevelopmentTemplate"
@@ -195,27 +289,32 @@ val javaVersion: String by lazy {
         ?.split(" ")
         ?.getOrNull(1) ?: JavaVersion.current().toString()
 }
-val useKotlin = getProp("use_kotlin", false).toBoolean()
-val editorconfig = getProp("editorconfig", "spotless")
-val minecraftVersion = getProp("minecraft_version", "1.12.2")
-val rootPackage = getProp("root_package", "org.ender_development")
-val userName = getPropEnv("DEV_USERNAME").ifBlank { getProp("minecraft_username", "Developer") }
+val useKotlin = props.get("use_kotlin", false).toBoolean()
+val editorconfig = props.get("editorconfig", "spotless")
+val minecraftVersion = props.get("minecraft_version", "1.12.2")
+val rootPackage = props.get("root_package", "org.ender_development")
+val userName = props.env("DEV_USERNAME").ifBlank { props.get("minecraft_username", "Developer") }
 
-val modId = getProp("mod_id").lowercase().trim().replace(" ", "_")
-val modName = getProp("mod_name")
+val modId =
+    props
+        .get("mod_id")
+        .lowercase()
+        .trim()
+        .replace(" ", "_")
+val modName = props.get("mod_name")
 val modVersion = project.version.toString()
 
-val modDescription = getProp("mod_description", "")
-val modAuthors = getPropList("mod_authors", ",").joinToString(", ")
-val modCredits = getProp("mod_credits", "Ender-Development.org")
-val modUrl = getProp("mod_url")
+val modDescription = props.get("mod_description", "")
+val modAuthors = props.list("mod_authors", ",").joinToString(", ")
+val modCredits = props.get("mod_credits", "Ender-Development.org")
+val modUrl = props.get("mod_url")
 val modLogoPath = evalProp("mod_logo_path", $$"assets/${mod_id}/textures/logo.png")
 
 val accessTransformerLocation = evalProp("access_transformer_location", $$"${mod_id}_at.cfg")
-val useAccessTransformer = getProp("use_access_transformer", true).toBoolean() && file("$projectDir/src/main/resources/$accessTransformerLocation").exists()
+val useAccessTransformer = props.get("use_access_transformer", true).toBoolean() && file("$projectDir/src/main/resources/$accessTransformerLocation").exists()
 
-val useTags = getProp("use_tags", true).toBoolean() && file("tags.properties").exists()
-val tagClassName = evalProp("tag_class_name", $$"${root_package}.${mod_id}.Tags")
+val useTags = props.get("use_tags", true).toBoolean() && file("tags.properties").exists()
+val tagClassName = props.get("tag_class_name", $$"${root_package}.${mod_id}.Tags")
 val defaultTags =
     mapOf(
         "KOTLIN_VERSION" to libs.versions.kotlin.get(),
