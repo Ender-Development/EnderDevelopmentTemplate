@@ -26,13 +26,9 @@
 
 import com.diffplug.gradle.spotless.SpotlessExtension
 import com.diffplug.gradle.spotless.SpotlessTask
-import com.sun.imageio.plugins.jpeg.JPEG.vendor
-import com.sun.org.apache.xpath.internal.XPathAPI.eval
 import groovy.json.JsonOutput
-import groovy.json.JsonOutput.prettyPrint
 import groovy.json.JsonSlurper
 import groovy.lang.GroovyShell
-import jdk.jfr.internal.JVM.include
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
@@ -45,7 +41,6 @@ import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import me.modmuss50.mpp.ReleaseType
 import me.modmuss50.mpp.platforms.modrinth.ModrinthEnvironment
-import org.gradle.cache.internal.streams.DefaultValueStore.encoding
 import org.gradle.internal.extensions.core.extra
 import org.gradle.plugins.ide.idea.model.IdeaLanguageLevel
 import org.jetbrains.changelog.Changelog
@@ -54,14 +49,12 @@ import org.jetbrains.gradle.ext.compiler
 import org.jetbrains.gradle.ext.runConfigurations
 import org.jetbrains.gradle.ext.settings
 import org.jetbrains.gradle.ext.taskTriggers
-import java.io.StringWriter
 import java.net.HttpURLConnection
 import java.net.URI
 import java.net.URLEncoder
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import java.util.Properties
-import kotlin.text.isLetterOrDigit
 
 plugins {
     id("java")
@@ -135,8 +128,7 @@ class PropertyManager {
                 .filter { it.isNotEmpty() }
                 .map(String::trim)
                 .toMutableList()
-        } catch (e: GradleException) {
-            logger.lifecycle("Error while loading $key as list: ${e.message}", e)
+        } catch (_: GradleException) {
             mutableListOf()
         }
 
@@ -146,6 +138,17 @@ class PropertyManager {
      * @return Either the value of the environment variable or an evaluated property with the same name
      */
     fun env(key: String): String = System.getenv(key) ?: get(key, "")
+
+    /**
+     * Evaluates a boolean from the given key
+     * @param key name of the property to get
+     * @param default what else to evaluate if no value is found
+     * @return The evaluated value as boolean
+     */
+    fun flag(
+        key: String,
+        default: Any,
+    ): Boolean = get(key, default).toBoolean()
 
     private fun eval(input: String): String {
         if (input.startsWith($$"${{") && input.endsWith("}}")) {
@@ -185,59 +188,6 @@ data class ModDependency(
 )
 
 fun MinimalExternalModuleDependency.toCord(): String = "${this.group}:${this.name}:${this.version}"
-
-fun getProp(
-    name: String,
-    default: Any? = null,
-): String =
-    extra.takeIf { it.has(name) }?.get(name)?.toString()
-        ?: findProperty(name)?.toString()
-        ?: default?.toString()
-        ?: throw GradleException("Property $name needs to be specified!")
-
-fun getPropList(
-    name: String,
-    delimiter: String = " ",
-): MutableList<String> =
-    try {
-        getProp(name).split(delimiter).filter { it.isNotEmpty() }.toMutableList()
-    } catch (_: GradleException) {
-        mutableListOf()
-    }
-
-fun getPropEnv(name: String): String = System.getenv(name) ?: getProp(name, "")
-
-fun evalProp(
-    name: String,
-    default: Any? = null,
-): String = evalPropValue(getProp(name, default))
-
-fun evalPropValue(value: String): String {
-    fun placeHolder(value: String): String {
-        var result = value
-        val template = "\\$\\{([^}]+)}".toRegex()
-        template.findAll(value).forEach {
-            val placeholder = it.value
-            val key = it.groupValues[1]
-            val replacement = if (key == "mod_version") modVersion else evalProp(key)
-            result = result.replace(placeholder, replacement)
-        }
-        return result
-    }
-
-    fun shell(value: String): String {
-        if (value.startsWith($$"${{") && value.endsWith("}}")) {
-            val expression = placeHolder((value.substring(3, value.length - 2).trim()))
-            try {
-                return GroovyShell().evaluate(expression).toString()
-            } catch (e: Exception) {
-                throw GradleException("Failed to evaluate expression '$expression' in property evaluation.", e)
-            }
-        }
-        return placeHolder(value)
-    }
-    return shell(value)
-}
 
 val markdownChangelog: Provider<String> =
     provider {
@@ -292,11 +242,11 @@ val rootPackage = props.get("root_package", "org.ender_development")
 val userName = props.env("DEV_USERNAME").ifBlank { props.get("minecraft_username", "Developer") }
 
 val modId =
-    props
-        .get("mod_id")
-        .lowercase()
-        .trim()
-        .replace(" ", "_")
+    props.get("mod_id").apply {
+        lowercase()
+        trim()
+        replace(" ", "_")
+    }
 val modName = props.get("mod_name", $$"${mod_id}")
 val modVersion = project.version.toString()
 
@@ -330,7 +280,7 @@ val isCoreMod = props.get("is_coremod", false).toBoolean()
 
 val useAssetMover = props.get("use_assetmover", false).toBoolean()
 val useBetterConfig = props.get("use_betterconfig", false).toBoolean()
-val useCatalyx = props.get("use_catalyx", false).toBoolean() && evalPropValue($$"${{ \"${mod_id}\" != \"catalyx\" }}").toBoolean()
+val useCatalyx = props.get("use_catalyx", $$"${{ \"${mod_id}\" != \"catalyx\" }}").toBoolean()
 val useConfigAnytime = props.get("use_configanytime", false).toBoolean() || useCatalyx
 val useCraftTweaker = props.get("use_crafttweaker", false).toBoolean()
 val useForgelinContinuous = props.get("use_forgelincontinuous", false).toBoolean() || useKotlin || useCatalyx
@@ -534,8 +484,8 @@ java {
         languageVersion = JavaLanguageVersion.of(25)
         vendor = JvmVendorSpec.AZUL
     }
-    if (getProp("generate_source_jar", true).toBoolean()) withSourcesJar()
-    if (getProp("generate_javadocs_jar", true).toBoolean()) withJavadocJar()
+    if (props.get("generate_source_jar", true).toBoolean()) withSourcesJar()
+    if (props.get("generate_javadocs_jar", true).toBoolean()) withJavadocJar()
 }
 
 kotlin {
@@ -562,7 +512,7 @@ minecraft {
         args.add("-Dlegacy.debugClassLoadingSave=true")
     }
     extraRunJvmArguments.addAll(args)
-    extraRunJvmArguments.addAll(getPropList("extra_jvm_args", ";"))
+    extraRunJvmArguments.addAll(props.list("extra_jvm_args", ";"))
 
     if (useTags && !useKotlin) {
         injectedTags.set(props.load("tags.properties").ifEmpty { return@minecraft })
@@ -572,11 +522,11 @@ minecraft {
 publishing {
     repositories {
         maven {
-            name = evalProp("maven_name", $$"${mod_id}")
+            name = props.get("maven_name", $$"${mod_id}")
             url = uri(mavenUrl)
             credentials {
-                username = getPropEnv("MAVEN_USERNAME")
-                password = getPropEnv("MAVEN_PASSWORD")
+                username = props.env("MAVEN_USERNAME")
+                password = props.env("MAVEN_PASSWORD")
             }
         }
     }
@@ -610,15 +560,15 @@ publishMods {
     maxRetries = 5
     changelog = markdownChangelog
     type =
-        when (getProp("release_type", "release")) {
+        when (props.get("release_type", "release")) {
             "release" -> ReleaseType.STABLE
             "beta" -> ReleaseType.BETA
             "alpha" -> ReleaseType.ALPHA
             else -> throw GradleException("'release_type' is none of ['release', 'beta', 'alpha']")
         }
     curseforge {
-        dryRun = getProp("curseforge_debug", false).toBoolean() || !publishToCurseForge
-        accessToken = getPropEnv("CURSEFORGE_TOKEN").ifEmpty { return@curseforge }
+        dryRun = props.get("curseforge_debug", false).toBoolean() || !publishToCurseForge
+        accessToken = props.env("CURSEFORGE_TOKEN").ifEmpty { return@curseforge }
         projectId = moddexProject?.curseforge?.id ?: return@curseforge
         minecraftVersions.add(minecraftVersion)
         client = isClient
@@ -635,11 +585,11 @@ publishMods {
         }
     }
     modrinth {
-        dryRun = getProp("modrinth_debug", false).toBoolean() || !publishToModrinth
-        accessToken = getPropEnv("MODRINTH_TOKEN").ifEmpty { return@modrinth }
+        dryRun = props.get("modrinth_debug", false).toBoolean() || !publishToModrinth
+        accessToken = props.env("MODRINTH_TOKEN").ifEmpty { return@modrinth }
         projectId = moddexProject?.modrinth?.id ?: return@modrinth
         minecraftVersions.add(minecraftVersion)
-        if (getProp("modrinth_sync_readme", true).toBoolean()) {
+        if (props.get("modrinth_sync_readme", true).toBoolean()) {
             projectDescription = providers.fileContents(layout.projectDirectory.file("README.me")).asText
         }
         environment =
@@ -738,7 +688,7 @@ configure<SpotlessExtension> {
         target(".github/**/*.md", "docs/**/*.md", "gradle/**/*.md", "src/*/resources/**/*.md", "*.md")
         propertiesFile("gradle.properties")
         properties {
-            putAll(extra.properties.mapValues { evalPropValue(it.value.toString()) })
+            putAll(extra.properties.mapValues { (k, v) -> props.get(k) })
             put("javaVersion", javaVersion)
             put("kotlinVersion", libs.versions.kotlin.get())
             put("gradleVersion", project.gradle.gradleVersion)
@@ -792,7 +742,7 @@ configure<SpotlessExtension> {
         return if (yFrom == yLast) yFrom else "$yFrom-$yLast"
     }
 
-    val header = $$"/*\n * Copyright (c) $${cSpan()} $${getPropList("mod_authors", ",").first()}\n * SPDX-License-Identifier: $${getProp("license", "LGPL-3.0-only")}\n */\n\n"
+    val header = "/*\n * Copyright (c) ${cSpan()} ${props.list("mod_authors", ",").first()}\n * SPDX-License-Identifier: $rmLicense\n */\n\n"
     java {
         target("src/main/java/**/*.java")
         importOrder()
@@ -877,17 +827,17 @@ fun guessIndent(): String {
 listOf("runClient", "runServer").forEach { task ->
     tasks.named<JavaExec>(task).configure {
         if (isCoreMod) {
-            jvmArgs("-Dfml.coreMods.load=${getProp("coremod_plugin_class_name")}")
+            jvmArgs("-Dfml.coreMods.load=${props.get("coremod_plugin_class_name")}")
         }
         if (task.contains("Client") && useGroovyScript) {
             listOf(
-                getProp("grs_use_examples_folder", true) to "-Dgroovyscript.use_examples_folder=true",
-                getProp("grs_run_ls", false) to "-Dgroovyscript.run_ls=true",
-                getProp("grs_generate_examples", false) to "-Dgroovyscript.generate_examples=true",
-                getProp("grs_generate_wiki", true) to "-Dgroovyscript.generate_wiki=true",
-                getProp("grs_generate_and_crash", false) to "-Dgroovyscript.generate_and_crash=true",
-                getProp("grs_log_missing_lang_keys", true) to "-Dgroovyscript.log_missing_lang_keys=true",
-                getProp("grs_disable_cache", false) to "-Dgroovyscript.disable_cache=true",
+                props.get("grs_use_examples_folder", true) to "-Dgroovyscript.use_examples_folder=true",
+                props.get("grs_run_ls", false) to "-Dgroovyscript.run_ls=true",
+                props.get("grs_generate_examples", false) to "-Dgroovyscript.generate_examples=true",
+                props.get("grs_generate_wiki", true) to "-Dgroovyscript.generate_wiki=true",
+                props.get("grs_generate_and_crash", false) to "-Dgroovyscript.generate_and_crash=true",
+                props.get("grs_log_missing_lang_keys", true) to "-Dgroovyscript.log_missing_lang_keys=true",
+                props.get("grs_disable_cache", false) to "-Dgroovyscript.disable_cache=true",
             ).filter { it.first.toBoolean() }.map { it.second }.forEach { jvmArgs(it) }
         }
         if (jvmArgs.isNotEmpty()) logger.lifecycle(jvmArgs.toString())
@@ -973,7 +923,7 @@ tasks.register("switchEditorConfig") {
 
     val destination = file("$projectDir/.editorconfig")
 
-    onlyIf { !getProp("disable_editorconfig", false).toBoolean() }
+    onlyIf { !props.get("disable_editorconfig", false).toBoolean() }
 
     doFirst {
         val sourceFile =
@@ -1018,8 +968,8 @@ tasks.register("generateMixinJson") {
     description = "Generate missing mixin files"
 
     fun mixinCfg(name: String) = "src/main/resources/mixins/mixins.$modId.$name.json"
-    val missingConfigs = getPropList("mixin_configs").filter { !file(mixinCfg(it)).exists() }
-    onlyIf { useMixins && getProp("generate_mixin_json", true).toBoolean() && missingConfigs.isNotEmpty() }
+    val missingConfigs = props.list("mixin_configs").filter { !file(mixinCfg(it)).exists() }
+    onlyIf { useMixins && props.get("generate_mixin_json", true).toBoolean() && missingConfigs.isNotEmpty() }
     doLast {
         missingConfigs.forEach {
             val mixinCfg = file(mixinCfg(it))
@@ -1091,8 +1041,8 @@ tasks.withType<Jar> {
     manifest {
         val attributeMap = mutableMapOf<String, String>()
         if (isCoreMod) {
-            attributeMap["FMLCorePlugin"] = getProp("coremod_plugin_class_name")
-            if (getProp("coremod_includes_mod").toBoolean()) {
+            attributeMap["FMLCorePlugin"] = props.get("coremod_plugin_class_name")
+            if (props.get("coremod_includes_mod").toBoolean()) {
                 attributeMap["FMLCorePluginContainsFMLMod"] = "true"
                 val currentTask = gradle.startParameter.taskNames
                 val validTasks = arrayOf("build", "prepareObfModsFolder", "runObfClient")
@@ -1102,8 +1052,8 @@ tasks.withType<Jar> {
         if (useAccessTransformer) {
             attributeMap["FMLAT"] = accessTransformerLocation
         }
-        if (useMixins && getPropList("mixin_configs").isNotEmpty()) {
-            attributeMap["MixinConfigs"] = getPropList("mixin_configs").joinToString(",")
+        if (useMixins && props.list("mixin_configs").isNotEmpty()) {
+            attributeMap["MixinConfigs"] = props.list("mixin_configs").joinToString(",")
         }
         if (useMixins && mixinConnectorClass.isNotBlank()) {
             attributeMap["MixinConnector"] = mixinConnectorClass
@@ -1151,8 +1101,8 @@ fun connect(url: String): HttpURLConnection {
         }
 
     // Only send the token to GitHub hosts, never to arbitrary URLs
-    if (getPropEnv("GITHUB_TOKEN").isNotBlank() && conn.url.host in setOf("api.github.com", "raw.githubusercontent.com")) {
-        conn.setRequestProperty("Authorization", "token ${getPropEnv("GITHUB_TOKEN")}")
+    if (props.env("GITHUB_TOKEN").isNotBlank() && conn.url.host in setOf("api.github.com", "raw.githubusercontent.com")) {
+        conn.setRequestProperty("Authorization", "token ${props.env("GITHUB_TOKEN")}")
     }
     return conn
 }
@@ -1771,7 +1721,7 @@ tasks.register("verifyPushed") {
     notCompatibleWithConfigurationCache("runs git")
     mustRunAfter("pushRelease")
     doLast {
-        if (getProp("modrinth_debug", false).toBoolean() && getProp("curseforge_debug", false).toBoolean()) return@doLast
+        if (props.get("modrinth_debug", false).toBoolean() && props.get("curseforge_debug", false).toBoolean()) return@doLast
         check('-' !in modVersion) { "Not a release version ($modVersion), refusing to publish" }
         val head = git("rev-parse", "HEAD")
         git("remote").split("\n").forEach { remote ->
