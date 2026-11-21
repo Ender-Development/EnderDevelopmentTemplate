@@ -26,12 +26,9 @@
 
 import com.diffplug.gradle.spotless.SpotlessExtension
 import com.diffplug.gradle.spotless.SpotlessTask
-import com.sun.imageio.plugins.jpeg.JPEG.vendor
 import groovy.json.JsonOutput
-import groovy.json.JsonOutput.prettyPrint
 import groovy.json.JsonSlurper
 import groovy.lang.GroovyShell
-import jdk.jfr.internal.JVM.include
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
@@ -44,7 +41,6 @@ import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import me.modmuss50.mpp.ReleaseType
 import me.modmuss50.mpp.platforms.modrinth.ModrinthEnvironment
-import org.gradle.cache.internal.streams.DefaultValueStore.encoding
 import org.gradle.internal.extensions.core.extra
 import org.gradle.plugins.ide.idea.model.IdeaLanguageLevel
 import org.jetbrains.changelog.Changelog
@@ -53,6 +49,7 @@ import org.jetbrains.gradle.ext.compiler
 import org.jetbrains.gradle.ext.runConfigurations
 import org.jetbrains.gradle.ext.settings
 import org.jetbrains.gradle.ext.taskTriggers
+import java.io.StringWriter
 import java.net.HttpURLConnection
 import java.net.URI
 import java.net.URLEncoder
@@ -413,6 +410,7 @@ idea {
 
                 if (isTemplateRepo) {
                     newTask("Generate Template Docs", "generatePropertyDocs")
+                    newTask("Update Gradle Version", "updateGradle")
                 }
 
                 release("Bump (patch)", "-Preckon.stage=final")
@@ -1181,35 +1179,26 @@ tasks.register("checkBuildScriptLatest") {
     group = "ender-development"
     description = "Get the version number of the latest release"
     onlyIf { !isTemplateRepo }
+    dependsOn("checkGradleUpdate")
     doLast { logger.lifecycle("Latest Buildscript Release: ${resolveLatestTag()}") }
 }
 
 val currentGradleVersion: String = gradle.gradleVersion
 
 val latestGradleVersion: String by lazy {
-    fetchLatestGradleVersion()
-        ?: throw GradleException("Could not determine the latest Gradle version.")
+    fetchLatestGradleVersion() ?: throw GradleException("Could not determine the latest Gradle version.")
 }
 
-fun fetchLatestGradleVersion(): String? =
-    try {
-        val json = URI("https://services.gradle.org/versions/current").toURL().readText()
-        Regex("\"version\"\\s*:\\s*\"([^\"]+)\"").find(json)?.groupValues?.get(1)
-    } catch (_: Exception) {
-        null
-    }
+fun fetchLatestGradleVersion(): String? {
+    val json = JsonSlurper().parseText(fetchText("https://services.gradle.org/versions/current")) as Map<*, *>
+    return json.getOrDefault("version", versionGradle).toString()
+}
 
-fun wrapperArgs(): List<String> =
-    listOf(
-        "-classpath",
-        rootProject.file("gradle/wrapper/gradle-wrapper.jar").absolutePath,
-        "org.gradle.wrapper.GradleWrapperMain",
-        "wrapper",
-        "--gradle-version",
-        latestGradleVersion,
-        "--distribution-type",
-        "bin",
-    )
+fun fetchSha256(url: String): String {
+    val hash = fetchText(url)
+    require(Regex("[0-9a-f]{64}").matches(hash)) { "Unexpected checksum response from $url" }
+    return hash
+}
 
 tasks.register("checkGradleUpdate") {
     group = "ender-development"
@@ -1225,29 +1214,58 @@ tasks.register("checkGradleUpdate") {
     }
 }
 
-tasks.register<Exec>("updateGradleProperties") {
-    group = "ender-development"
-    description = "Old wrapper rewrites gradle-wrapper.properties"
-    notCompatibleWithConfigurationCache("Performs a network lookup")
-    workingDir = rootDir
-    executable = File(System.getProperty("java.home"), "bin/java").absolutePath
-    argumentProviders.add(CommandLineArgumentProvider { wrapperArgs() })
-}
-
-tasks.register<Exec>("refreshGradleWrapper") {
-    group = "ender-development"
-    description = "re-run so the new Gradle version regenerates the jar and scripts"
-    notCompatibleWithConfigurationCache("Performs a network lookup")
-    mustRunAfter("updateGradleProperties")
-    workingDir = rootDir
-    executable = File(System.getProperty("java.home"), "bin/java").absolutePath
-    argumentProviders.add(CommandLineArgumentProvider { wrapperArgs() })
-}
-
 tasks.register("updateGradle") {
-    group = "build setup"
-    description = "Updates the Gradle wrapper to the latest release (properties, jar and scripts)."
-    dependsOn("updateGradleProperties", "refreshGradleWrapper")
+    group = "ender-development"
+    description = "Points the Gradle wrapper at the latest release and ensures a checksum is set."
+    notCompatibleWithConfigurationCache("Performs a network lookup")
+
+    val propsFile = rootProject.file("gradle/wrapper/gradle-wrapper.properties")
+
+    doLast {
+        val latest = fetchLatestGradleVersion() ?: throw GradleException("Could not determine the latest Gradle version.")
+        val props = loadProps(propsFile.path)
+        val oldUrl = props.getProperty("distributionUrl") ?: throw GradleException("No 'distributionUrl' in $propsFile")
+
+        val type = if (oldUrl.endsWith("-all.zip")) "all" else "bin"
+        val newUrl = oldUrl.substringBeforeLast("/") + "/gradle-$latest-$type.zip"
+
+        val urlChanged = newUrl != oldUrl
+        val shaMissing = props.getProperty("distributionSha256Sum").isNullOrBlank()
+
+        if (!urlChanged && !shaMissing) {
+            logger.lifecycle("Gradle wrapper is already on $latest with a checksum set.")
+            return@doLast
+        }
+
+        // Fetched before anything is written, so a failure leaves the file untouched
+        val sha =
+            try {
+                fetchSha256("https://services.gradle.org/distributions/gradle-$latest-$type.zip.sha256")
+            } catch (e: Exception) {
+                throw GradleException("Could not fetch the checksum for Gradle $latest: ${e.message}", e)
+            }
+
+        props.setProperty("distributionUrl", newUrl)
+        props.setProperty("distributionSha256Sum", sha)
+
+        val out =
+            StringWriter()
+                .also { props.store(it, null) }
+                .toString()
+                .lines()
+                .filterNot { it.startsWith("#") || it.isBlank() }
+                .sorted()
+                .joinToString("\n", postfix = "\n")
+
+        propsFile.writeText(out)
+
+        logger.lifecycle(
+            when {
+                urlChanged -> "Wrapper updated to $latest. Reload the Gradle project to apply it."
+                else -> "Already on $latest; added the missing checksum."
+            },
+        )
+    }
 }
 
 tasks.register("checkBuildScriptUpdate") {
