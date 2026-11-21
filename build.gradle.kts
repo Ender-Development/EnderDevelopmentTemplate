@@ -27,6 +27,7 @@
 import com.diffplug.gradle.spotless.SpotlessExtension
 import com.diffplug.gradle.spotless.SpotlessTask
 import com.sun.imageio.plugins.jpeg.JPEG.vendor
+import com.sun.org.apache.xpath.internal.XPathAPI.eval
 import groovy.json.JsonOutput
 import groovy.json.JsonOutput.prettyPrint
 import groovy.json.JsonSlurper
@@ -90,11 +91,15 @@ class PropertyManager {
     /**
      * Loads properties from the specified property file and returns them as a Properties object.
      * @param filePath The path of the properties file to load. e.g. `project.properties`
-     * @return A [Properties] object containing the loaded properties
+     * @return A [Properties] object containing the loaded properties with evaluated values
      * @throws GradleException when the given file doesn't exist.
      */
-    fun load(filePath: String): Properties =
-        Properties().takeIf { file(filePath).exists() }?.apply { file(filePath).inputStream().use { load(it) } } ?: throw GradleException("File $filePath doesn't exist!")
+    fun load(filePath: String): Map<String, String> {
+        val file = file(filePath)
+        require(file.exists()) { "File $filePath doesn't exist!" }
+        val props = Properties().apply { file.reader().use { load(it) } }
+        return props.stringPropertyNames().associateWith { eval(props.getProperty(it)).trim().ifEmpty { throw GradleException("Empty tag value found for key: $it") } }
+    }
 
     /**
      * Tries to get the value of the given property key.
@@ -140,7 +145,7 @@ class PropertyManager {
      * @param key name of the property to get
      * @return Either the value of the environment variable or an evaluated property with the same name
      */
-    fun env(key: String): String = System.getenv(name) ?: get(name, "")
+    fun env(key: String): String = System.getenv(key) ?: get(key, "")
 
     private fun eval(input: String): String {
         if (input.startsWith($$"${{") && input.endsWith("}}")) {
@@ -180,15 +185,6 @@ data class ModDependency(
 )
 
 fun MinimalExternalModuleDependency.toCord(): String = "${this.group}:${this.name}:${this.version}"
-
-fun loadProps(filename: String): Properties =
-    Properties().apply {
-        val file = file(filename)
-        if (file.exists()) {
-            return@apply file(filename).inputStream().use { load(it) }
-        }
-        throw GradleException("File $filename doesn't exist!")
-    }
 
 fun getProp(
     name: String,
@@ -301,16 +297,16 @@ val modId =
         .lowercase()
         .trim()
         .replace(" ", "_")
-val modName = props.get("mod_name")
+val modName = props.get("mod_name", $$"${mod_id}")
 val modVersion = project.version.toString()
 
 val modDescription = props.get("mod_description", "")
 val modAuthors = props.list("mod_authors", ",").joinToString(", ")
 val modCredits = props.get("mod_credits", "Ender-Development.org")
 val modUrl = props.get("mod_url")
-val modLogoPath = evalProp("mod_logo_path", $$"assets/${mod_id}/textures/logo.png")
+val modLogoPath = props.get("mod_logo_path", $$"assets/${mod_id}/textures/logo.png")
 
-val accessTransformerLocation = evalProp("access_transformer_location", $$"${mod_id}_at.cfg")
+val accessTransformerLocation = props.get("access_transformer_location", $$"${mod_id}_at.cfg")
 val useAccessTransformer = props.get("use_access_transformer", true).toBoolean() && file("$projectDir/src/main/resources/$accessTransformerLocation").exists()
 
 val useTags = props.get("use_tags", true).toBoolean() && file("tags.properties").exists()
@@ -330,31 +326,31 @@ val defaultTags =
         "MIXINBOOTER_VERSION" to libs.versions.mixinBooter.get(),
     )
 
-val isCoreMod = getProp("is_coremod", false).toBoolean()
+val isCoreMod = props.get("is_coremod", false).toBoolean()
 
-val useAssetMover = getProp("use_assetmover", false).toBoolean()
-val useBetterConfig = getProp("use_betterconfig", false).toBoolean()
-val useCatalyx = getProp("use_catalyx", false).toBoolean() && evalPropValue($$"${{ \"${mod_id}\" != \"catalyx\" }}").toBoolean()
-val useConfigAnytime = getProp("use_configanytime", false).toBoolean() || useCatalyx
-val useCraftTweaker = getProp("use_crafttweaker", false).toBoolean()
-val useForgelinContinuous = getProp("use_forgelincontinuous", false).toBoolean() || useKotlin || useCatalyx
-val useGroovyScript = getProp("use_groovyscript", false).toBoolean()
-val useModularUi = getProp("use_modularui", false).toBoolean()
-val useReachFix = getProp("use_reachfix", false).toBoolean()
-val useExpandedEvents = getProp("use_expandedevents", false).toBoolean()
+val useAssetMover = props.get("use_assetmover", false).toBoolean()
+val useBetterConfig = props.get("use_betterconfig", false).toBoolean()
+val useCatalyx = props.get("use_catalyx", false).toBoolean() && evalPropValue($$"${{ \"${mod_id}\" != \"catalyx\" }}").toBoolean()
+val useConfigAnytime = props.get("use_configanytime", false).toBoolean() || useCatalyx
+val useCraftTweaker = props.get("use_crafttweaker", false).toBoolean()
+val useForgelinContinuous = props.get("use_forgelincontinuous", false).toBoolean() || useKotlin || useCatalyx
+val useGroovyScript = props.get("use_groovyscript", false).toBoolean()
+val useModularUi = props.get("use_modularui", false).toBoolean()
+val useReachFix = props.get("use_reachfix", false).toBoolean()
+val useExpandedEvents = props.get("use_expandedevents", false).toBoolean()
 
-val useMixins = evalProp("use_mixins", false).toBoolean()
-val mixinRefMap = evalProp("mixin_refmap", $$"mixins.${mod_id}.refmap.json")
-val mixinConnectorClass = evalProp("mixin_connector_class", $$"${root_package}.${mod_id}.MixinConnector")
+val useMixins = props.get("use_mixins", false).toBoolean()
+val mixinRefMap = props.get("mixin_refmap", $$"mixins.${mod_id}.refmap.json")
+val mixinConnectorClass = props.get("mixin_connector_class", $$"${root_package}.${mod_id}.MixinConnector")
 
-val mavenUrl = getProp("maven_url", "https://maven.ender-development.org")
-val publishToMaven = getProp("publish_to_maven", true).toBoolean()
-val releaseType = getProp("release_type", "release")
+val mavenUrl = props.get("maven_url", "https://maven.ender-development.org")
+val publishToMaven = props.get("publish_to_maven", true).toBoolean()
+val releaseType = props.get("release_type", "release")
 if (!listOf("release", "beta", "alpha").contains(releaseType)) throw GradleException("'release_type' is none of ['release', 'beta', 'alpha']")
-val isServer = getProp("is_server_side", true).toBoolean()
-val isClient = getProp("is_client_side", true).toBoolean()
+val isServer = props.get("is_server_side", true).toBoolean()
+val isClient = props.get("is_client_side", true).toBoolean()
 if (!isClient && !isServer) throw GradleException("At least one of 'client_side' and 'server_side' must be true!")
-val additionalDependencies = getPropList("additional_dependencies", " ")
+val additionalDependencies = props.list("additional_dependencies")
 val modDependencies =
     listOf(
         ModDependency("mixin-booter", useMixins, ""),
@@ -370,18 +366,18 @@ val modDependencies =
         ModDependency("expanded-events", useExpandedEvents, "D#curse.maven:expanded-events-1396395:${libs.versions.expandedevents}", availableOnModrinth = false),
     )
 
-val useSpotless = getProp("disable_spotless", false).toBoolean()
+val useSpotless = props.get("disable_spotless", false).toBoolean()
 
-val rmLicense = getProp("license", "All Rights Reserved")
-val rmContent = evalProp("readme", $$"${mod_description}")
-val rmPartnership = getProp("partnership", "")
+val rmLicense = props.get("license", "All Rights Reserved")
+val rmContent = props.get("readme", $$"${mod_description}")
+val rmPartnership = props.get("partnership", "")
 
 val moddexProject: ModdexProject? by lazy {
-    moddexLookup(getProp("moddex_id", ""), getProp("curseforge_id", ""), getProp("modrinth_id", ""))
+    moddexLookup(props.get("moddex_id", ""), props.get("curseforge_id", ""), props.get("modrinth_id", ""))
 }
 val isPublished = moddexProject != null
-val publishToCurseForge = getProp("publish_to_curseforge", false).toBoolean() && isPublished && moddexProject!!.curseforge != null
-val publishToModrinth = getProp("publish_to_modrinth", false).toBoolean() && isPublished && moddexProject!!.modrinth != null
+val publishToCurseForge = props.get("publish_to_curseforge", false).toBoolean() && isPublished && moddexProject!!.curseforge != null
+val publishToModrinth = props.get("publish_to_modrinth", false).toBoolean() && isPublished && moddexProject!!.modrinth != null
 
 group = rootPackage
 
@@ -437,7 +433,7 @@ dependencies {
         implementation("CraftTweaker2:CraftTweaker2-MC1120-Main:1.12-${libs.versions.crafttweaker.get()}")
     }
 
-    val modDeps = modDependencies.map { if (it.flag) it.dep else "" } + loadProps("dependencies.properties").values.map { it.toString().trim() }
+    val modDeps = modDependencies.map { if (it.flag) it.dep else "" } + props.load("dependencies.properties").values
     modDeps.filter { it.isNotEmpty() }.forEach { raw ->
         if (raw.count { it == '#' } > 1) throw GradleException("Dependency $raw contains more than one delimiter '#'!")
         val flags = raw.substringBefore('#', "").uppercase()
@@ -551,10 +547,10 @@ kotlin {
 
 minecraft {
     mcVersion = minecraftVersion
-    mcpMappingChannel = getProp("mapping_channel", "stable")
-    mcpMappingVersion = getProp("mapping_version", 39)
+    mcpMappingChannel = props.get("mapping_channel", "stable")
+    mcpMappingVersion = props.get("mapping_version", 39)
     username = userName
-    useDependencyAccessTransformers = getProp("use_dependency_at_files", true).toBoolean()
+    useDependencyAccessTransformers = props.get("use_dependency_at_files", true).toBoolean()
 
     val args = mutableListOf("-ea:$group.$modId")
     args.add("-Dmixin.hotSwap=true")
@@ -569,8 +565,7 @@ minecraft {
     extraRunJvmArguments.addAll(getPropList("extra_jvm_args", ";"))
 
     if (useTags && !useKotlin) {
-        val props = loadProps("tags.properties").ifEmpty { return@minecraft }
-        injectedTags.set(props.entries.associate { (k, v) -> k.toString() to evalPropValue(v.toString()).ifEmpty { throw GradleException("Empty tag value found for key: $k") } })
+        injectedTags.set(props.load("tags.properties").ifEmpty { return@minecraft })
     }
 }
 
@@ -940,7 +935,7 @@ tasks.register("createReference") {
         val tagsFile = "tags.properties"
         val tagsPath = tagClassName.removeSuffix(".Tags")
         val objectName = modName.filter(Char::isLetterOrDigit)
-        val tags = loadProps(tagsFile)
+        val tags = props.load(tagsFile)
         val indent = guessIndent()
         val reference =
             buildString {
@@ -958,9 +953,8 @@ tasks.register("createReference") {
                 defaultTags.forEach { (key, value) -> appendLine("${indent}const val $key = \"$value\"") }
                 appendLine("$indent// project-specific tags")
                 tags.forEach { (key, value) ->
-                    val eval = (if (value is String) evalPropValue(value) else value).toString()
-                    val value = if (eval.toDoubleOrNull() != null) eval else "\"${eval.replace("\"", "\\\"")}\""
-                    appendLine("${indent}const val $key = $value")
+                    val entry = if (value.toDoubleOrNull() != null) value else "\"${value.replace("\"", "\\\"")}\""
+                    appendLine("${indent}const val $key = $entry")
                 }
                 appendLine("}")
             }
@@ -1282,13 +1276,7 @@ tasks.register("checkBuildScriptLatest") {
     doLast { logger.lifecycle("Latest Buildscript Release: ${resolveLatestTag()}") }
 }
 
-val currentGradleVersion: String = gradle.gradleVersion
-
-val latestGradleVersion: String by lazy {
-    fetchLatestGradleVersion() ?: throw GradleException("Could not determine the latest Gradle version.")
-}
-
-fun fetchLatestGradleVersion(): String? {
+fun fetchLatestGradleVersion(): String {
     val json = JsonSlurper().parseText(fetchText("https://services.gradle.org/versions/current")) as Map<*, *>
     return json.getOrDefault("version", versionGradle).toString()
 }
@@ -1306,9 +1294,8 @@ tasks.register("checkGradleUpdate") {
     doLast {
         val latest = fetchLatestGradleVersion()
         when {
-            latest == null -> logger.warn("Could not check for a newer Gradle version.")
-            latest != currentGradleVersion -> logger.lifecycle("Gradle $latest is available (you're on $currentGradleVersion). Run `./gradlew updateGradle` to upgrade.")
-            else -> logger.lifecycle("Gradle is up to date ($currentGradleVersion).")
+            latest != gradle.gradleVersion -> logger.lifecycle("Gradle $latest is available (you're on ${gradle.gradleVersion}). Run `./gradlew updateGradle` to upgrade.")
+            else -> logger.lifecycle("Gradle is up to date (${gradle.gradleVersion}).")
         }
     }
 }
@@ -1321,15 +1308,15 @@ tasks.register("updateGradle") {
     val propsFile = rootProject.file("gradle/wrapper/gradle-wrapper.properties")
 
     doLast {
-        val latest = fetchLatestGradleVersion() ?: throw GradleException("Could not determine the latest Gradle version.")
-        val props = loadProps(propsFile.path)
-        val oldUrl = props.getProperty("distributionUrl") ?: throw GradleException("No 'distributionUrl' in $propsFile")
+        val latest = fetchLatestGradleVersion()
+        val props = props.load(propsFile.path).toMutableMap()
+        val oldUrl = props["distributionUrl"] ?: throw GradleException("No 'distributionUrl' in $propsFile")
 
         val type = if (oldUrl.endsWith("-all.zip")) "all" else "bin"
         val newUrl = oldUrl.substringBeforeLast("/") + "/gradle-$latest-$type.zip"
 
         val urlChanged = newUrl != oldUrl
-        val shaMissing = props.getProperty("distributionSha256Sum").isNullOrBlank()
+        val shaMissing = props["distributionSha256Sum"].isNullOrBlank()
 
         if (!urlChanged && !shaMissing) {
             logger.lifecycle("Gradle wrapper is already on $latest with a checksum set.")
@@ -1344,17 +1331,10 @@ tasks.register("updateGradle") {
                 throw GradleException("Could not fetch the checksum for Gradle $latest: ${e.message}", e)
             }
 
-        props.setProperty("distributionUrl", newUrl)
-        props.setProperty("distributionSha256Sum", sha)
+        props["distributionUrl"] = newUrl
+        props["distributionSha256Sum"] = sha
 
-        val out =
-            StringWriter()
-                .also { props.store(it, null) }
-                .toString()
-                .lines()
-                .filterNot { it.startsWith("#") || it.isBlank() }
-                .sorted()
-                .joinToString("\n", postfix = "\n")
+        val out = props.map { (k, v) -> "$k = $v" }.sorted().joinToString("\n", prefix = "# Managed by Ender-Development.org buildscripts", postfix = "\n")
 
         propsFile.writeText(out)
 
@@ -1441,7 +1421,7 @@ tasks.register("syncBuildScriptVersion") {
 }
 
 // Documentation Generation
-enum class PropKind { PROP, LIST, ENV, EVAL }
+enum class PropKind { PROP, LIST, ENV }
 
 data class PropUsage(
     val name: String,
@@ -1458,7 +1438,7 @@ data class PropMeta(
     val isComplete get() = category.isNotBlank() && description.isNotBlank()
 }
 
-val propCallRegex = Regex("""\b(getPropList|getPropEnv|getProp|evalProp)\(\s*"([^"$\\]+)"\s*(?:,\s*(\$*"(?:[^"\\]|\\.)*"|true|false|-?\d+)\s*)?\)""")
+val propCallRegex = Regex("""\b(props\.(?:get|list|env))\(\s*"([^"$\\]+)"\s*(?:,\s*(\$*"(?:[^"\\]|\\.)*"|true|false|-?\d+)\s*)?\)""")
 val propMetaFile = file("gradle/template/property-docs.json")
 val propDocFile = file("gradle/template/PROPERTIES.md")
 
@@ -1475,10 +1455,9 @@ fun scanProps(source: File): List<PropUsage> {
         .findAll(text)
         .map { m ->
             val kind =
-                when (m.groupValues[1]) {
-                    "getPropList" -> PropKind.LIST
-                    "getPropEnv" -> PropKind.ENV
-                    "evalProp" -> PropKind.EVAL
+                when {
+                    m.groupValues[1].contains("list") -> PropKind.LIST
+                    m.groupValues[1].contains("env") -> PropKind.ENV
                     else -> PropKind.PROP
                 }
             PropUsage(
@@ -1522,18 +1501,12 @@ fun renderProp(
     meta: PropMeta,
 ): String {
     val isList = usages.any { it.kind == PropKind.LIST }
-    val isEval = usages.any { it.kind == PropKind.EVAL }
     val hasEnv = usages.any { it.kind == PropKind.ENV }
     val required = usages.any { it.isRequired() }
-
-    val defaults = usages.filter { it.kind == PropKind.PROP || it.kind == PropKind.EVAL }.mapNotNull { it.arg }.distinct()
+    val defaults = usages.filter { it.kind == PropKind.PROP }.mapNotNull { it.arg }.distinct()
 
     val type =
         when {
-            isEval -> {
-                "Evaluated String"
-            }
-
             isList -> {
                 val delimiters = usages.filter { it.kind == PropKind.LIST }.map { it.arg ?: "\" \"" }.distinct()
                 "List (delimiter ${delimiters.joinToString(", ") { "`$it`" }})"
