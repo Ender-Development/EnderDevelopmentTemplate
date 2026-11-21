@@ -20,6 +20,17 @@ If true, Gradle will also generate a sources jar whenever you build your project
 - **Required:** no
 - **Default:** `true`
 
+## 💳 GitHub
+
+### `GITHUB_TOKEN`
+
+Provide a fine-grained personal access token to bypass GitHub rate-limits when using this template
+
+- **Type:** String
+- **Required:** no
+- **Default:** none
+- **Environment variable:** `GITHUB_TOKEN` takes precedence over the property
+
 ## 🔭 Integration - AssetMover
 
 ### `use_assetmover`
@@ -46,9 +57,9 @@ BetterConfig extends Forge's annotation-based config system to support nested ar
 
 Kotlin library by [Ender-Development.org](https://ender-development.org) that provides various utilities and helpers for Minecraft Forge modding
 
-- **Type:** Boolean
+- **Type:** String
 - **Required:** no
-- **Default:** `false`
+- **Default:** `${{ \"${mod_id}\" != \"catalyx\" }}`
 
 ## 🔭 Integration - Configanytime
 
@@ -279,7 +290,7 @@ The mod id is a unique identifier for your mod. It must be all lowercase and con
 
 The logo path for the mod. This should be a path to a PNG file within the assets folder of your mod.
 
-- **Type:** Evaluated String
+- **Type:** String
 - **Required:** no
 - **Default:** `assets/${mod_id}/textures/logo.png`
 
@@ -288,8 +299,8 @@ The logo path for the mod. This should be a path to a PNG file within the assets
 The mod name is the display name for your mod. This can contain spaces and capitalization.
 
 - **Type:** String
-- **Required:** yes
-- **Default:** none
+- **Required:** no
+- **Default:** `${mod_id}`
 
 ### `mod_url`
 
@@ -390,7 +401,7 @@ Enable features related to publishing to CurseForge
 
 The name of the file you want to publish
 
-- **Type:** Evaluated String
+- **Type:** String
 - **Required:** no
 - **Default:** `${mod_id}`
 
@@ -479,7 +490,7 @@ The license this project is published under.
 
 - **Type:** String
 - **Required:** no
-- **Default:** `All Rights Reserved`, `LGPL-3.0-only`
+- **Default:** `All Rights Reserved`
 
 ### `partnership`
 
@@ -493,7 +504,7 @@ A section about a partnership if there is one to promote. Use `<br>` for linebre
 
 A longer description about the features of this mod. Use `<br>` for linebreak. An example can be found in the `project.properties`.
 
-- **Type:** Evaluated String
+- **Type:** String
 - **Required:** no
 - **Default:** `${mod_description}`
 
@@ -537,7 +548,7 @@ If true, dependencies will be scanned for AT files and applied automatically
 
 Change location and name of the AT file
 
-- **Type:** Evaluated String
+- **Type:** String
 - **Required:** no
 - **Default:** `${mod_id}_at.cfg`
 
@@ -583,7 +594,7 @@ Spotless is a code formatting plugin that can enforce a consistent code style ac
 
 Powerful tool to do runtime description changes of classes. Docs: [SpongeForge Wiki](https://github.com/SpongePowered/Mixin/wiki), [MixinBooter Wiki](https://github.com/CleanroomMC/MixinBooter), [CleanroomMC Wiki](https://cleanroommc.com/wiki/forge-mod-development/mixin/preface)
 
-- **Type:** Evaluated String
+- **Type:** Boolean
 - **Required:** no
 - **Default:** `false`
 
@@ -607,7 +618,7 @@ Delimit configs with spaces. Template generation can be toggled via `generate_mi
 
 Classpath to fully-qualified class implementing `org.spongepowered.asm.mixin.connect.IMixinConnector`. When non-empty, written to the jar manifest as MixinConnector
 
-- **Type:** Evaluated String
+- **Type:** String
 - **Required:** no
 - **Default:** `${root_package}.${mod_id}.MixinConnector`
 
@@ -615,7 +626,7 @@ Classpath to fully-qualified class implementing `org.spongepowered.asm.mixin.con
 
 A refmap is a JSON that denotes mapping conversions, this JSON is generated automatically, with the name `mixins.mod_id.refmap.json`
 
-- **Type:** Evaluated String
+- **Type:** String
 - **Required:** no
 - **Default:** `mixins.${mod_id}.refmap.json`
 
@@ -633,17 +644,6 @@ A class is generated at build-time for compilation, to describe property that ha
 
 The path where the generated Tags class will be placed. Separators should be dots, e.g. `com.example.project`
 
-- **Type:** Evaluated String
-- **Required:** no
-- **Default:** `${root_package}.${mod_id}.Tags`
-
-## ⚠️ Uncategorized
-
-### `GITHUB_TOKEN`
-
-_No description yet._
-
 - **Type:** String
 - **Required:** no
-- **Default:** none
-- **Environment variable:** `GITHUB_TOKEN` takes precedence over the property
+- **Default:** `${root_package}.${mod_id}.Tags`

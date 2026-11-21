@@ -8,8 +8,8 @@
         "description": "Can be used to set the player name"
     },
     "GITHUB_TOKEN": {
-        "category": "",
-        "description": ""
+        "category": "\ud83d\udcb3 GitHub",
+        "description": "Provide a fine-grained personal access token to bypass GitHub rate-limits when using this template"
     },
     "MAVEN_PASSWORD": {
         "category": "\ud83d\udcf0 Publishing - Maven",
@@ -142,10 +142,6 @@
     "minecraft_version": {
         "category": "\ud83c\udf0d Minecraft",
         "description": "The version of Minecraft to use. This should only ever be `1.12.2` and changing this may lead to unexpected issues."
-    },
-    "mixin_booter_version": {
-        "category": "\ud83d\udee0\ufe0f Utility - Mixins",
-        "description": "Provided by the template via `gradle.properties`"
     },
     "mixin_configs": {
         "category": "\ud83d\udee0\ufe0f Utility - Mixins",
