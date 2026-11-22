@@ -72,12 +72,6 @@ plugins {
     alias(libs.plugins.mod.publish)
 }
 
-val template =
-    object {
-        val REPO = "Ender-Development/EnderDevelopmentTemplate"
-        val DIRECTORY = "gradle/template"
-    }
-
 val props = PropertyManager()
 
 class PropertyManager {
@@ -168,15 +162,115 @@ class PropertyManager {
         template.findAll(input).forEach {
             val placeholder = it.value
             val key = it.groupValues[1]
-            val replacement = if (key == "mod_version") modVersion else get(key)
+            val replacement = if (key == "mod_version") project.version.toString() else get(key)
             result = result.replace(placeholder, replacement)
         }
         return result
     }
 }
 
-val repoName = "Ender-Development/EnderDevelopmentTemplate"
-val templateDir = "gradle/template"
+val runner = CommandRunner()
+
+class CommandRunner {
+    fun git(vararg args: String): String = command("git", *args)
+
+    fun java(vararg args: String): List<String> = command("java", *args).split("\n")
+
+    private fun command(vararg args: String): String {
+        val p = ProcessBuilder(*args).directory(rootDir).redirectErrorStream(true).start()
+        val out =
+            p.inputStream
+                .bufferedReader()
+                .readText()
+                .trim()
+        check(p.waitFor() == 0) { "${args.first()} ${args.joinToString(" ")} failed:\n$out" }
+        return out
+    }
+}
+
+val featAccessTransformer = AccessTransformer()
+
+class AccessTransformer {
+    val location = props.get("access_transformer_location", $$"${mod_id}_at.cfg")
+    val enabled = props.flag("use_access_transformer", false) || file("$projectDir/src/main/resources/$location").exists()
+}
+
+val featTags = Tags()
+
+class Tags {
+    val enabled = props.flag("use_tags", true) && file("tags.properties").exists()
+    val className = props.get("tag_class_name", $$"${root_package}.${mod_id}.Tags")
+}
+
+val featMixins = Mixin()
+
+class Mixin {
+    val enabled = props.flag("use_mixins", false)
+    val refMap = props.get("mixin_refmap", $$"mixins.${mod_id}.refmap.json")
+    val connectorClass = props.get("mixin_connector_class", $$"${root_package}.${mod_id}.MixinConnector")
+}
+
+val featKotlin = Kotlin()
+
+class Kotlin {
+    val enabled = props.flag("use_kotlin", false)
+    val catalyx = props.flag("use_catalyx", $$"${{ \"${mod_id}\" != \"catalyx\" }}")
+    val forgelinContinuous = props.flag("use_forgelincontinuous", false) || enabled || catalyx
+}
+
+val featPublishing = Publishing()
+
+class Publishing {
+    private val releaseType = props.get("release_type", "release")
+    private val types =
+        mapOf(
+            "alpha" to ReleaseType.ALPHA,
+            "beta" to ReleaseType.BETA,
+            "release" to ReleaseType.STABLE,
+        )
+
+    val publishToMaven = props.flag("publish_to_maven", true)
+    val mavenUrl = props.get("maven_url", "https://maven.ender-development.org")
+
+    val server = props.flag("is_server_side", true)
+    val client = props.flag("is_client_side", true)
+
+    init {
+        require(releaseType in types.keys) { "'release_type' is none of ['release', 'beta', 'alpha']" }
+        require(client || server) { "At least one of 'client_side' and 'server_side' must be true!" }
+    }
+
+    val branch = types[releaseType] ?: ReleaseType.STABLE
+
+    val environment: ModrinthEnvironment =
+        when {
+            client && !server -> ModrinthEnvironment.CLIENT_ONLY
+            !client && server -> ModrinthEnvironment.SERVER_ONLY
+            else -> ModrinthEnvironment.CLIENT_AND_SERVER
+        }
+}
+
+val mod = Mod()
+
+class Mod {
+    val id =
+        props.get("mod_id").apply {
+            lowercase()
+            trim()
+            replace(" ", "_")
+        }
+    val name = props.get("mod_name", $$"${mod_id}")
+    val version = project.version.toString()
+    val description = props.get("mod_description", "")
+    val authors = props.list("mod_authors", ",")
+    val credits = props.get("mod_credits", "Ender-Development.org")
+    val url = props.get("mod_url")
+    val logoPath = props.get("mod_logo_path", $$"assets/${mod_id}/textures/logo.png")
+
+    init {
+        require(id.matches(Regex("^[a-z0-9_]+$"))) { "'mod_name' can only contain letters, digits or underscores!" }
+    }
+}
 
 data class ModDependency(
     val slug: String,
@@ -194,129 +288,46 @@ val markdownChangelog: Provider<String> =
         if (!file("CHANGELOG.md").exists()) throw GradleException("CHANGELOG.md does not exist!")
         val log =
             changelog.renderItem(
-                changelog.get(modVersion).withHeader(false).withEmptySections(false),
+                changelog.get(mod.version).withHeader(false).withEmptySections(false),
                 Changelog.OutputType.MARKDOWN,
             )
-        if (log.isEmpty()) throw GradleException("changelog for version $modVersion is empty!")
+        if (log.isEmpty()) throw GradleException("changelog for version ${mod.version} is empty!")
         log
     }
 
-fun console(
-    command: String,
-    vararg args: String,
-): String {
-    val p = ProcessBuilder(command, *args).directory(rootDir).redirectErrorStream(true).start()
-    val out =
-        p.inputStream
-            .bufferedReader()
-            .readText()
-            .trim()
-    check(p.waitFor() == 0) { "$command ${args.joinToString(" ")} failed:\n$out" }
-    return out
-}
-
-fun git(vararg args: String): String = console("git", *args)
-
 val isTemplateRepo: Boolean by lazy {
-    git("remote").split("\n").any { git("remote", "get-url", it).contains(repoName) }
+    runner.git("remote").split("\n").any { runner.git("remote", "get-url", it).contains(repoName) }
 }
 
 val versionGradle: String by lazy {
-    console("java", "-jar", "gradle/wrapper/gradle-wrapper.jar", "-v")
-        .split("\n")
+    runner
+        .java("-jar", "gradle/wrapper/gradle-wrapper.jar", "-v")
         .getOrNull(2)
         ?.split(" ")
         ?.lastOrNull() ?: GradleVersion.current().toString()
 }
-val javaVersion: String by lazy {
-    console("java", "--version")
-        .split("\n")
-        .firstOrNull()
-        ?.split(" ")
-        ?.getOrNull(1) ?: JavaVersion.current().toString()
-}
-val useKotlin = props.get("use_kotlin", false).toBoolean()
+
+val repoName = "Ender-Development/EnderDevelopmentTemplate"
+val templateDir = "gradle/template"
 val editorconfig = props.get("editorconfig", "spotless")
 val minecraftVersion = props.get("minecraft_version", "1.12.2")
 val rootPackage = props.get("root_package", "org.ender_development")
 val userName = props.env("DEV_USERNAME").ifBlank { props.get("minecraft_username", "Developer") }
 
-val modId =
-    props.get("mod_id").apply {
-        lowercase()
-        trim()
-        replace(" ", "_")
-    }
-val modName = props.get("mod_name", $$"${mod_id}")
-val modVersion = project.version.toString()
-
-val modDescription = props.get("mod_description", "")
-val modAuthors = props.list("mod_authors", ",").joinToString(", ")
-val modCredits = props.get("mod_credits", "Ender-Development.org")
-val modUrl = props.get("mod_url")
-val modLogoPath = props.get("mod_logo_path", $$"assets/${mod_id}/textures/logo.png")
-
-val accessTransformerLocation = props.get("access_transformer_location", $$"${mod_id}_at.cfg")
-val useAccessTransformer = props.get("use_access_transformer", true).toBoolean() && file("$projectDir/src/main/resources/$accessTransformerLocation").exists()
-
-val useTags = props.get("use_tags", true).toBoolean() && file("tags.properties").exists()
-val tagClassName = props.get("tag_class_name", $$"${root_package}.${mod_id}.Tags")
-val defaultTags =
-    mapOf(
-        "KOTLIN_VERSION" to libs.versions.kotlin.get(),
-        "FORGELIN_VERSION" to "${libs.versions.kotlin.get()}.0",
-        "KOTLIN_LANGUAGE_ADAPTER" to "io.github.chaosunity.forgelin.KotlinAdapter",
-        "GROOVYSCRIPT_VERSION" to libs.versions.groovyscript.get(),
-        "CRAFTTWEAKER_VERSION" to libs.versions.crafttweaker.get(),
-        "HADENOUGHITEMS_VERSION" to libs.versions.hei.get(),
-        "THEONEPROBE_VERSION" to libs.versions.top.get(),
-        "CATALYX_VERSION" to libs.versions.catalyx.get(),
-        "CONFIGANYTIME_VERSION" to libs.versions.configanytime.get(),
-        "ASSETMOVER_VERSION" to libs.versions.assetmover.get(),
-        "MIXINBOOTER_VERSION" to libs.versions.mixinBooter.get(),
-    )
-
-val isCoreMod = props.get("is_coremod", false).toBoolean()
-
-val useAssetMover = props.get("use_assetmover", false).toBoolean()
-val useBetterConfig = props.get("use_betterconfig", false).toBoolean()
-val useCatalyx = props.get("use_catalyx", $$"${{ \"${mod_id}\" != \"catalyx\" }}").toBoolean()
-val useConfigAnytime = props.get("use_configanytime", false).toBoolean() || useCatalyx
-val useCraftTweaker = props.get("use_crafttweaker", false).toBoolean()
-val useForgelinContinuous = props.get("use_forgelincontinuous", false).toBoolean() || useKotlin || useCatalyx
-val useGroovyScript = props.get("use_groovyscript", false).toBoolean()
-val useModularUi = props.get("use_modularui", false).toBoolean()
-val useReachFix = props.get("use_reachfix", false).toBoolean()
-val useExpandedEvents = props.get("use_expandedevents", false).toBoolean()
-
-val useMixins = props.get("use_mixins", false).toBoolean()
-val mixinRefMap = props.get("mixin_refmap", $$"mixins.${mod_id}.refmap.json")
-val mixinConnectorClass = props.get("mixin_connector_class", $$"${root_package}.${mod_id}.MixinConnector")
-
-val mavenUrl = props.get("maven_url", "https://maven.ender-development.org")
-val publishToMaven = props.get("publish_to_maven", true).toBoolean()
-val releaseType = props.get("release_type", "release")
-if (!listOf("release", "beta", "alpha").contains(releaseType)) throw GradleException("'release_type' is none of ['release', 'beta', 'alpha']")
-val isServer = props.get("is_server_side", true).toBoolean()
-val isClient = props.get("is_client_side", true).toBoolean()
-if (!isClient && !isServer) throw GradleException("At least one of 'client_side' and 'server_side' must be true!")
-val additionalDependencies = props.list("additional_dependencies")
 val modDependencies =
     listOf(
-        ModDependency("mixin-booter", useMixins, ""),
-        ModDependency("assetmover", useAssetMover, libs.assetmover.get().toCord()),
-        ModDependency("configanytime", useConfigAnytime, libs.configanytime.get().toCord()),
-        ModDependency("better-config", useBetterConfig, libs.betterconfig.get().toCord()),
-        ModDependency("crafttweaker", useCraftTweaker, "", optional = true),
-        ModDependency("groovyscript", useGroovyScript, libs.groovyscript.get().toCord(), optional = true),
-        ModDependency("forgelin-continuous", useForgelinContinuous, "T#io.github.chaosunity.forgelin:Forgelin-Continuous:${libs.versions.kotlin.get()}.0"),
-        ModDependency("catalyx", useCatalyx, "C#${libs.catalyx.get().toCord()}"),
-        ModDependency("modularui-uf", useModularUi, "D#curse.maven:modularui-uf-1663175:${libs.versions.modularui}"),
-        ModDependency("reach-fix", useReachFix, "D#curse.maven:reach-fix-556777:${libs.versions.reachfix}"),
-        ModDependency("expanded-events", useExpandedEvents, "D#curse.maven:expanded-events-1396395:${libs.versions.expandedevents}", availableOnModrinth = false),
+        ModDependency("mixin-booter", featMixins.enabled, ""),
+        ModDependency("assetmover", props.flag("use_assetmover", false), libs.assetmover.get().toCord()),
+        ModDependency("configanytime", props.flag("use_configanytime", false) || featKotlin.catalyx, libs.configanytime.get().toCord()),
+        ModDependency("better-config", props.flag("use_betterconfig", false), libs.betterconfig.get().toCord()),
+        ModDependency("crafttweaker", props.flag("use_crafttweaker", false), "", optional = true),
+        ModDependency("groovyscript", props.flag("use_groovyscript", false), libs.groovyscript.get().toCord(), optional = true),
+        ModDependency("forgelin-continuous", featKotlin.forgelinContinuous, "T#io.github.chaosunity.forgelin:Forgelin-Continuous:${libs.versions.kotlin.get()}.0"),
+        ModDependency("catalyx", featKotlin.catalyx, "C#${libs.catalyx.get().toCord()}"),
+        ModDependency("modularui-uf", props.flag("use_modularui", false), "D#curse.maven:modularui-uf-1663175:${libs.versions.modularui}"),
+        ModDependency("reach-fix", props.flag("use_reachfix", false), "D#curse.maven:reach-fix-556777:${libs.versions.reachfix}"),
+        ModDependency("expanded-events", props.flag("use_expandedevents", false), "D#curse.maven:expanded-events-1396395:${libs.versions.expandedevents}", availableOnModrinth = false),
     )
-
-val useSpotless = props.get("disable_spotless", false).toBoolean()
 
 val rmLicense = props.get("license", "All Rights Reserved")
 val rmContent = props.get("readme", $$"${mod_description}")
@@ -326,13 +337,13 @@ val moddexProject: ModdexProject? by lazy {
     moddexLookup(props.get("moddex_id", ""), props.get("curseforge_id", ""), props.get("modrinth_id", ""))
 }
 val isPublished = moddexProject != null
-val publishToCurseForge = props.get("publish_to_curseforge", false).toBoolean() && isPublished && moddexProject!!.curseforge != null
-val publishToModrinth = props.get("publish_to_modrinth", false).toBoolean() && isPublished && moddexProject!!.modrinth != null
+val publishToCurseForge = props.flag("publish_to_curseforge", false) && isPublished && moddexProject!!.curseforge != null
+val publishToModrinth = props.flag("publish_to_modrinth", false) && isPublished && moddexProject!!.modrinth != null
 
 group = rootPackage
 
 base {
-    archivesName = modId
+    archivesName = mod.id
 }
 
 buildscript {
@@ -362,14 +373,14 @@ dependencies {
     runtimeOnly(libs.strip.latest.forge.requirements)
     runtimeOnly(libs.osxnarratorblocker)
 
-    if (useKotlin) runtimeOnly(libs.rozutils) { isTransitive = false }
+    if (featKotlin.enabled) runtimeOnly(libs.rozutils) { isTransitive = false }
 
     runtimeOnly("curse.maven:scalingguis-319656:${libs.versions.scalingguis.get()}")
 
     compileOnly(libs.jetbrains.annotations)
     annotationProcessor(libs.jetbrains.annotations)
 
-    val mixin: String = modUtils.enableMixins(libs.mixinbooter.get().toCord(), mixinRefMap) as String
+    val mixin: String = modUtils.enableMixins(libs.mixinbooter.get().toCord(), featMixins.refMap) as String
     implementation(mixin) { isTransitive = false }
     annotationProcessor(mixin)
     add("mixinAgent", mixin) { isTransitive = false }
@@ -377,7 +388,7 @@ dependencies {
     implementation(libs.hei)
     implementation(rfg.deobf("curse.maven:theonesmeagle-977883:${libs.versions.top.get()}"))
 
-    if (useCraftTweaker) {
+    if (modDependencies.first { it.slug == "crafttweaker" }.flag) {
         implementation(libs.crafttweaker.api)
         implementation(libs.crafttweaker.zenscript)
         implementation("CraftTweaker2:CraftTweaker2-MC1120-Main:1.12-${libs.versions.crafttweaker.get()}")
@@ -484,8 +495,8 @@ java {
         languageVersion = JavaLanguageVersion.of(25)
         vendor = JvmVendorSpec.AZUL
     }
-    if (props.get("generate_source_jar", true).toBoolean()) withSourcesJar()
-    if (props.get("generate_javadocs_jar", true).toBoolean()) withJavadocJar()
+    if (props.flag("generate_source_jar", true)) withSourcesJar()
+    if (props.flag("generate_javadocs_jar", true)) withJavadocJar()
 }
 
 kotlin {
@@ -499,14 +510,14 @@ minecraft {
     mcVersion = minecraftVersion
     mcpMappingChannel = props.get("mapping_channel", "stable")
     mcpMappingVersion = props.get("mapping_version", 39)
-    username = userName
-    useDependencyAccessTransformers = props.get("use_dependency_at_files", true).toBoolean()
+    username = props.env("DEV_USERNAME").ifBlank { props.get("minecraft_username", "Developer") }
+    useDependencyAccessTransformers = props.flag("use_dependency_at_files", true)
 
-    val args = mutableListOf("-ea:$group.$modId")
+    val args = mutableListOf("-ea:$group.${mod.id}")
     args.add("-Dmixin.hotSwap=true")
     args.add("-Dmixin.checks.interfaces=true")
     args.add("-Dmixin.debug.export=true")
-    if (isCoreMod) {
+    if (props.flag("is_coremod", false)) {
         args.add("-Dlegacy.debugClassLoading=true")
         args.add("-Dlegacy.debugClassLoadingFiner=true")
         args.add("-Dlegacy.debugClassLoadingSave=true")
@@ -514,7 +525,7 @@ minecraft {
     extraRunJvmArguments.addAll(args)
     extraRunJvmArguments.addAll(props.list("extra_jvm_args", ";"))
 
-    if (useTags && !useKotlin) {
+    if (featTags.enabled && !featKotlin.enabled) {
         injectedTags.set(props.load("tags.properties").ifEmpty { return@minecraft })
     }
 }
@@ -523,7 +534,7 @@ publishing {
     repositories {
         maven {
             name = props.get("maven_name", $$"${mod_id}")
-            url = uri(mavenUrl)
+            url = uri(featPublishing.mavenUrl)
             credentials {
                 username = props.env("MAVEN_USERNAME")
                 password = props.env("MAVEN_PASSWORD")
@@ -534,12 +545,12 @@ publishing {
         create<MavenPublication>("mavenJava") {
             from(components["java"])
             groupId = rootPackage
-            artifactId = modId
+            artifactId = mod.id
         }
     }
 }
 tasks.publish {
-    onlyIf { !isTemplateRepo && publishToMaven }
+    onlyIf { !isTemplateRepo && featPublishing.publishToMaven }
 }
 
 fun modArchive(): Provider<RegularFile> {
@@ -559,20 +570,14 @@ publishMods {
     modLoaders.add("forge")
     maxRetries = 5
     changelog = markdownChangelog
-    type =
-        when (props.get("release_type", "release")) {
-            "release" -> ReleaseType.STABLE
-            "beta" -> ReleaseType.BETA
-            "alpha" -> ReleaseType.ALPHA
-            else -> throw GradleException("'release_type' is none of ['release', 'beta', 'alpha']")
-        }
+    type = featPublishing.branch
     curseforge {
-        dryRun = props.get("curseforge_debug", false).toBoolean() || !publishToCurseForge
+        dryRun = props.flag("curseforge_debug", false) || !publishToCurseForge
         accessToken = props.env("CURSEFORGE_TOKEN").ifEmpty { return@curseforge }
         projectId = moddexProject?.curseforge?.id ?: return@curseforge
         minecraftVersions.add(minecraftVersion)
-        client = isClient
-        server = isServer
+        client = featPublishing.client
+        server = featPublishing.server
 
         optional("had-enough-items")
         optional("theonesmeagle")
@@ -585,19 +590,14 @@ publishMods {
         }
     }
     modrinth {
-        dryRun = props.get("modrinth_debug", false).toBoolean() || !publishToModrinth
+        dryRun = props.flag("modrinth_debug", false) || !publishToModrinth
         accessToken = props.env("MODRINTH_TOKEN").ifEmpty { return@modrinth }
         projectId = moddexProject?.modrinth?.id ?: return@modrinth
         minecraftVersions.add(minecraftVersion)
-        if (props.get("modrinth_sync_readme", true).toBoolean()) {
+        if (props.flag("modrinth_sync_readme", true)) {
             projectDescription = providers.fileContents(layout.projectDirectory.file("README.me")).asText
         }
-        environment =
-            when {
-                isClient && !isServer -> ModrinthEnvironment.CLIENT_ONLY
-                !isClient && isServer -> ModrinthEnvironment.SERVER_ONLY
-                else -> ModrinthEnvironment.CLIENT_AND_SERVER
-            }
+        environment = featPublishing.environment
 
         optional("had-enough-items")
         optional("theonesmeagle")
@@ -610,7 +610,7 @@ publishMods {
                 requires(slug)
             }
         }
-        additionalDependencies.forEach { requires(it) }
+        props.list("additional_dependencies").forEach { requires(it) }
     }
 }
 
@@ -684,16 +684,23 @@ configure<SpotlessExtension> {
         endWithNewline()
     }
     freshmark {
-        fun latestRelease(): String = if (modVersion.split("-").size == 1) modVersion else git("tag").split("\n").last()
+        fun latestRelease(): String = if (mod.version.split("-").size == 1) mod.version else runner.git("tag").split("\n").last()
         target(".github/**/*.md", "docs/**/*.md", "gradle/**/*.md", "src/*/resources/**/*.md", "*.md")
         propertiesFile("gradle.properties")
         properties {
             putAll(extra.properties.mapValues { (k, v) -> props.get(k) })
-            put("javaVersion", javaVersion)
+            put(
+                "javaVersion",
+                runner
+                    .java("--version")
+                    .firstOrNull()
+                    ?.split(" ")
+                    ?.getOrNull(1) ?: JavaVersion.current().toString(),
+            )
             put("kotlinVersion", libs.versions.kotlin.get())
             put("gradleVersion", project.gradle.gradleVersion)
             put("repoName", repoName)
-            put("mavenUrl", if (publishToMaven) mavenUrl else "")
+            put("mavenUrl", featPublishing.mavenUrl.takeIf { featPublishing.publishToMaven }.orEmpty())
             put("LICENSE", rmLicense)
             put("README", rmContent)
             put("SPONSOR", rmPartnership)
@@ -737,12 +744,12 @@ configure<SpotlessExtension> {
     if (editorconfig != "spotless") return@configure
 
     fun cSpan(): String {
-        val yFrom = git("log", "--max-parents=0", "--format=%as").split("-").first()
-        val yLast = git("log", "-1", "--format=%as").split("-").first()
+        val yFrom = runner.git("log", "--max-parents=0", "--format=%as").split("-").first()
+        val yLast = runner.git("log", "-1", "--format=%as").split("-").first()
         return if (yFrom == yLast) yFrom else "$yFrom-$yLast"
     }
 
-    val header = "/*\n * Copyright (c) ${cSpan()} ${props.list("mod_authors", ",").first()}\n * SPDX-License-Identifier: $rmLicense\n */\n\n"
+    val header = "/*\n * Copyright (c) ${cSpan()} ${props.list("mod_authors", ",").first().trim()}\n * SPDX-License-Identifier: $rmLicense\n */\n\n"
     java {
         target("src/main/java/**/*.java")
         importOrder()
@@ -771,8 +778,8 @@ configure<SpotlessExtension> {
 }
 
 // Manage Access Transformers
-if (useAccessTransformer) {
-    val atFile = file("$projectDir/src/main/resources/$accessTransformerLocation")
+if (featAccessTransformer.enabled) {
+    val atFile = file("$projectDir/src/main/resources/${featAccessTransformer.location}")
     if (atFile.exists()) {
         tasks.deobfuscateMergedJarToSrg
             .get()
@@ -783,7 +790,7 @@ if (useAccessTransformer) {
             .accessTransformerFiles
             .from(atFile)
     } else {
-        throw GradleException("Access Transformer file '$accessTransformerLocation' does not exist!")
+        throw GradleException("Access Transformer file '${featAccessTransformer.location}' does not exist!")
     }
     // Apply ATs to both Minecraft and Forge sources/runtime patched jar
     tasks.applyJST.configure { accessTransformerFiles.from(atFile) }
@@ -801,7 +808,7 @@ tasks.register("afterSync") {
         "generateMixinJson",
         "checkPropertyDocs",
     )
-    doLast { logger.lifecycle("Current Project Version: $modVersion") }
+    doLast { logger.lifecycle("Current Project Version: ${mod.version}") }
     finalizedBy(tasks.spotlessApply)
 }
 
@@ -826,38 +833,34 @@ fun guessIndent(): String {
 
 listOf("runClient", "runServer").forEach { task ->
     tasks.named<JavaExec>(task).configure {
-        if (isCoreMod) {
+        if (props.flag("is_coremod", false)) {
             jvmArgs("-Dfml.coreMods.load=${props.get("coremod_plugin_class_name")}")
         }
-        if (task.contains("Client") && useGroovyScript) {
-            listOf(
-                props.get("grs_use_examples_folder", true) to "-Dgroovyscript.use_examples_folder=true",
-                props.get("grs_run_ls", false) to "-Dgroovyscript.run_ls=true",
-                props.get("grs_generate_examples", false) to "-Dgroovyscript.generate_examples=true",
-                props.get("grs_generate_wiki", true) to "-Dgroovyscript.generate_wiki=true",
-                props.get("grs_generate_and_crash", false) to "-Dgroovyscript.generate_and_crash=true",
-                props.get("grs_log_missing_lang_keys", true) to "-Dgroovyscript.log_missing_lang_keys=true",
-                props.get("grs_disable_cache", false) to "-Dgroovyscript.disable_cache=true",
-            ).filter { it.first.toBoolean() }.map { it.second }.forEach { jvmArgs(it) }
+        if (task.contains("Client") && modDependencies.first { it.slug == "groovyscript" }.flag) {
+            mapOf(
+                "-Dgroovyscript.use_examples_folder=true" to props.flag("grs_use_examples_folder", true),
+                "-Dgroovyscript.run_ls=true" to props.flag("grs_run_ls", false),
+                "-Dgroovyscript.generate_examples=true" to props.flag("grs_generate_examples", false),
+                "-Dgroovyscript.generate_wiki=true" to props.flag("grs_generate_wiki", true),
+                "-Dgroovyscript.generate_and_crash=true" to props.flag("grs_generate_and_crash", false),
+                "-Dgroovyscript.log_missing_lang_keys=true" to props.flag("grs_log_missing_lang_keys", true),
+                "-Dgroovyscript.disable_cache=true" to props.flag("grs_disable_cache", false),
+            ).filter { it.value }.forEach { jvmArgs(it.key) }
         }
         if (jvmArgs.isNotEmpty()) logger.lifecycle(jvmArgs.toString())
     }
-}
-
-tasks.wrapper {
-    gradleVersion = versionGradle
 }
 
 tasks.compileInjectedTagsKotlin.configure { dependsOn(tasks.injectTags) }
 tasks.compilePatchedMcKotlin.configure { dependsOn(tasks.decompressDecompiledSources) }
 tasks.compileMcLauncherKotlin.configure { dependsOn(tasks.createMcLauncherFiles) }
 tasks.injectTags.configure {
-    onlyIf { useTags && tags.get().isNotEmpty() && !useKotlin }
-    outputClassName = tagClassName
+    onlyIf { featTags.enabled && tags.get().isNotEmpty() && !featKotlin.enabled }
+    outputClassName = featTags.className
 }
 tasks.prepareObfModsFolder.configure { finalizedBy("prioritizeCoremods") }
 tasks.spotlessApply.configure {
-    onlyIf { useSpotless }
+    onlyIf { props.flag("disable_spotless", false) }
     dependsOn(tasks.clearSkiesApply)
 }
 tasks.decompressDecompiledSources {
@@ -880,11 +883,11 @@ tasks.register("prioritizeCoremods") {
 tasks.register("createReference") {
     group = "ender-development"
     description = "Generates the Reference.kt file from tags.properties."
-    onlyIf { useKotlin && useTags }
+    onlyIf { featKotlin.enabled && featTags.enabled }
     doLast {
         val tagsFile = "tags.properties"
-        val tagsPath = tagClassName.removeSuffix(".Tags")
-        val objectName = modName.filter(Char::isLetterOrDigit)
+        val tagsPath = featTags.className.removeSuffix(".Tags")
+        val objectName = mod.name.filter(Char::isLetterOrDigit)
         val tags = props.load(tagsFile)
         val indent = guessIndent()
         val reference =
@@ -900,7 +903,19 @@ tasks.register("createReference") {
                 appendLine("@Suppress(\"UNUSED\")")
                 appendLine("object ${objectName}Reference {")
                 appendLine("$indent// buildscript defaults")
-                defaultTags.forEach { (key, value) -> appendLine("${indent}const val $key = \"$value\"") }
+                mapOf(
+                    "KOTLIN_VERSION" to libs.versions.kotlin.get(),
+                    "FORGELIN_VERSION" to "${libs.versions.kotlin.get()}.0",
+                    "KOTLIN_LANGUAGE_ADAPTER" to "io.github.chaosunity.forgelin.KotlinAdapter",
+                    "GROOVYSCRIPT_VERSION" to libs.versions.groovyscript.get(),
+                    "CRAFTTWEAKER_VERSION" to libs.versions.crafttweaker.get(),
+                    "HADENOUGHITEMS_VERSION" to libs.versions.hei.get(),
+                    "THEONEPROBE_VERSION" to libs.versions.top.get(),
+                    "CATALYX_VERSION" to libs.versions.catalyx.get(),
+                    "CONFIGANYTIME_VERSION" to libs.versions.configanytime.get(),
+                    "ASSETMOVER_VERSION" to libs.versions.assetmover.get(),
+                    "MIXINBOOTER_VERSION" to libs.versions.mixinBooter.get(),
+                ).forEach { (key, value) -> appendLine("${indent}const val $key = \"$value\"") }
                 appendLine("$indent// project-specific tags")
                 tags.forEach { (key, value) ->
                     val entry = if (value.toDoubleOrNull() != null) value else "\"${value.replace("\"", "\\\"")}\""
@@ -923,7 +938,7 @@ tasks.register("switchEditorConfig") {
 
     val destination = file("$projectDir/.editorconfig")
 
-    onlyIf { !props.get("disable_editorconfig", false).toBoolean() }
+    onlyIf { !props.flag("disable_editorconfig", false) }
 
     doFirst {
         val sourceFile =
@@ -943,16 +958,16 @@ tasks.register("createIJScope") {
     group = "ender-development"
     description = "Creates the IntelliJ scope file for the mod sources"
     onlyIf { !isTemplateRepo }
-    inputs.property("modName", modName)
+    inputs.property("modName", mod.name)
     val outputFile = layout.projectDirectory.file(".idea/scopes/Mod_Source.xml")
     outputs.file(outputFile)
     doLast {
-        val filtered = modName.filter(Char::isLetterOrDigit)
+        val filtered = mod.name.filter(Char::isLetterOrDigit)
 
         val ijScope =
             buildString {
                 appendLine("<component name=\"DependencyValidationManager\">")
-                appendLine("  <scope name=\"$modName Source\" pattern=\"file[$filtered.main]:*/&amp;&amp;!file[$filtered.main]:resources//*\" />")
+                appendLine("  <scope name=\"${mod.name} Source\" pattern=\"file[$filtered.main]:*/&amp;&amp;!file[$filtered.main]:resources//*\" />")
                 appendLine("</component>")
             }
 
@@ -967,9 +982,9 @@ tasks.register("generateMixinJson") {
     group = "ender-development"
     description = "Generate missing mixin files"
 
-    fun mixinCfg(name: String) = "src/main/resources/mixins/mixins.$modId.$name.json"
+    fun mixinCfg(name: String) = "src/main/resources/mixins/mixins.${mod.id}.$name.json"
     val missingConfigs = props.list("mixin_configs").filter { !file(mixinCfg(it)).exists() }
-    onlyIf { useMixins && props.get("generate_mixin_json", true).toBoolean() && missingConfigs.isNotEmpty() }
+    onlyIf { featMixins.enabled && props.flag("generate_mixin_json", true) && missingConfigs.isNotEmpty() }
     doLast {
         missingConfigs.forEach {
             val mixinCfg = file(mixinCfg(it))
@@ -981,8 +996,8 @@ tasks.register("generateMixinJson") {
                 }
             val cfg =
                 buildJsonObject {
-                    put("package", "$rootPackage.$modId.")
-                    put("refmap", mixinRefMap)
+                    put("package", "$rootPackage.${mod.id}.")
+                    put("refmap", $$"${mixin_refmap}")
                     put("target", "@env(DEFAULT)")
                     put("minVersion", "0.8.5")
                     put("compatibilityLevel", "JAVA_8")
@@ -998,15 +1013,15 @@ tasks.register("generateMixinJson") {
 tasks.withType<ProcessResources> {
     // This will ensure that this task is redone when the versions change
     inputs.property("minecraft_version", minecraftVersion)
-    inputs.property("mod_id", modId)
-    inputs.property("mod_name", modName)
-    inputs.property("mod_version", modVersion)
-    inputs.property("mod_description", modDescription)
-    inputs.property("mod_authors", modAuthors)
-    inputs.property("mod_credits", modCredits)
-    inputs.property("mod_url", modUrl)
-    inputs.property("mod_logo_path", modLogoPath)
-    inputs.property("mixin_refmap", mixinRefMap)
+    inputs.property("mod_id", mod.id)
+    inputs.property("mod_name", mod.name)
+    inputs.property("mod_version", mod.version)
+    inputs.property("mod_description", mod.description)
+    inputs.property("mod_authors", mod.authors.joinToString(", "))
+    inputs.property("mod_credits", mod.credits)
+    inputs.property("mod_url", mod.url)
+    inputs.property("mod_logo_path", mod.logoPath)
+    inputs.property("mixin_refmap", featMixins.refMap)
 
     // Replace various properties
     fun getFiles(
@@ -1014,24 +1029,24 @@ tasks.withType<ProcessResources> {
         baseDir: File = file("src/main/resources"),
     ) = fileTree(baseDir) { include(pattern) }.files.map { it.relativeTo(baseDir).invariantSeparatorsPath }
 
-    val mixins = getFiles("mixins/mixins.$modId.*.json")
-    val lang = getFiles("assets/$modId/lang/*.lang")
+    val mixins = getFiles("mixins/mixins.${mod.id}.*.json")
+    val lang = getFiles("assets/${mod.id}/lang/*.lang")
     filesMatching(arrayListOf("mcmod.info", "pack.mcmeta") + mixins + lang) {
         expand(
             "minecraft_version" to minecraftVersion,
-            "mod_id" to modId,
-            "mod_name" to modName,
-            "mod_version" to modVersion,
-            "mod_description" to modDescription,
-            "mod_authors" to modAuthors,
-            "mod_credits" to modCredits,
-            "mod_url" to modUrl,
-            "mod_logo_path" to modLogoPath,
-            "mixin_refmap" to mixinRefMap,
+            "mod_id" to mod.id,
+            "mod_name" to mod.name,
+            "mod_version" to mod.version,
+            "mod_description" to mod.description,
+            "mod_authors" to mod.authors.joinToString(", "),
+            "mod_credits" to mod.credits,
+            "mod_url" to mod.url,
+            "mod_logo_path" to mod.logoPath,
+            "mixin_refmap" to featMixins.refMap,
         )
     }
 
-    if (useAccessTransformer) {
+    if (featAccessTransformer.enabled) {
         // Make sure Access Transformer files are in META-INF folder
         rename("(.+_at.cfg)", "META-INF/$1")
     }
@@ -1040,23 +1055,23 @@ tasks.withType<ProcessResources> {
 tasks.withType<Jar> {
     manifest {
         val attributeMap = mutableMapOf<String, String>()
-        if (isCoreMod) {
+        if (props.flag("is_coremod", false)) {
             attributeMap["FMLCorePlugin"] = props.get("coremod_plugin_class_name")
-            if (props.get("coremod_includes_mod").toBoolean()) {
+            if (props.flag("coremod_includes_mod", true)) {
                 attributeMap["FMLCorePluginContainsFMLMod"] = "true"
                 val currentTask = gradle.startParameter.taskNames
                 val validTasks = arrayOf("build", "prepareObfModsFolder", "runObfClient")
                 if (currentTask.isNotEmpty() && currentTask[0] in validTasks) attributeMap["ForceLoadAsMod"] = "true"
             }
         }
-        if (useAccessTransformer) {
-            attributeMap["FMLAT"] = accessTransformerLocation
+        if (featAccessTransformer.enabled) {
+            attributeMap["FMLAT"] = featAccessTransformer.location
         }
-        if (useMixins && props.list("mixin_configs").isNotEmpty()) {
+        if (featMixins.enabled && props.list("mixin_configs").isNotEmpty()) {
             attributeMap["MixinConfigs"] = props.list("mixin_configs").joinToString(",")
         }
-        if (useMixins && mixinConnectorClass.isNotBlank()) {
-            attributeMap["MixinConnector"] = mixinConnectorClass
+        if (featMixins.enabled && featMixins.connectorClass.isNotBlank()) {
+            attributeMap["MixinConnector"] = featMixins.connectorClass
         }
         attributes(attributeMap)
     }
@@ -1352,26 +1367,26 @@ tasks.register("syncBuildScriptVersion") {
     onlyIf { isTemplateRepo }
     mustRunAfter(tasks.patchChangelog)
     doLast {
-        require(Regex("""\d+(\.\d+)*""").matches(modVersion)) {
-            "buildscript_version '$modVersion' is not a valid version (expected e.g. 1.2.3)"
+        require(Regex("""\d+(\.\d+)*""").matches(mod.version)) {
+            "buildscript_version '${mod.version}' is not a valid version (expected e.g. 1.2.3)"
         }
 
         versionedFiles.forEach {
             val target = file(it.path)
             val old = target.readText()
-            val new = withVersionHeader(old, it.headerPrefix, it.headerSuffix, modVersion)
+            val new = withVersionHeader(old, it.headerPrefix, it.headerSuffix, mod.version)
             if (new != old) {
                 target.writeText(new)
-                logger.lifecycle("Set ${it.path} header to ${it.headerPrefix}$modVersion${it.headerSuffix}")
+                logger.lifecycle("Set ${it.path} header to ${it.headerPrefix}${mod.version}${it.headerSuffix}")
             } else {
-                logger.lifecycle("${it.path} already at $modVersion")
+                logger.lifecycle("${it.path} already at ${mod.version}")
             }
         }
     }
 }
 
 // Documentation Generation
-enum class PropKind { PROP, LIST, ENV }
+enum class PropKind { PROP, LIST, ENV, FLAG }
 
 data class PropUsage(
     val name: String,
@@ -1388,7 +1403,7 @@ data class PropMeta(
     val isComplete get() = category.isNotBlank() && description.isNotBlank()
 }
 
-val propCallRegex = Regex("""\b(props\.(?:get|list|env))\(\s*"([^"$\\]+)"\s*(?:,\s*(\$*"(?:[^"\\]|\\.)*"|true|false|-?\d+)\s*)?\)""")
+val propCallRegex = Regex("""\b(props\.(?:get|list|env|flag))\(\s*"([^"$\\]+)"\s*(?:,\s*(\$*"(?:[^"\\]|\\.)*"|true|false|-?\d+)\s*)?\)""")
 val propMetaFile = file("gradle/template/property-docs.json")
 val propDocFile = file("gradle/template/PROPERTIES.md")
 
@@ -1408,6 +1423,7 @@ fun scanProps(source: File): List<PropUsage> {
                 when {
                     m.groupValues[1].contains("list") -> PropKind.LIST
                     m.groupValues[1].contains("env") -> PropKind.ENV
+                    m.groupValues[1].contains("flag") -> PropKind.FLAG
                     else -> PropKind.PROP
                 }
             PropUsage(
@@ -1451,6 +1467,7 @@ fun renderProp(
     meta: PropMeta,
 ): String {
     val isList = usages.any { it.kind == PropKind.LIST }
+    val isFlag = usages.any { it.kind == PropKind.FLAG }
     val hasEnv = usages.any { it.kind == PropKind.ENV }
     val required = usages.any { it.isRequired() }
     val defaults = usages.filter { it.kind == PropKind.PROP }.mapNotNull { it.arg }.distinct()
@@ -1458,11 +1475,14 @@ fun renderProp(
     val type =
         when {
             isList -> {
-                val delimiters = usages.filter { it.kind == PropKind.LIST }.map { it.arg ?: "\" \"" }.distinct()
-                "List (delimiter ${delimiters.joinToString(", ") { "`$it`" }})"
+                usages
+                    .filter { it.kind == PropKind.LIST }
+                    .map { it.arg ?: "\" \"" }
+                    .distinct()
+                    .joinToString(", ", prefix = "List (delimiter ", postfix = ")") { "`$it`" }
             }
 
-            defaults.isNotEmpty() && defaults.all { it.unquoted().toBooleanStrictOrNull() != null } -> {
+            isFlag -> {
                 "Boolean"
             }
 
@@ -1576,10 +1596,10 @@ val prefixToGroup = mapOf("add" to "Additions", "fix" to "Bugfixes", "misc" to "
 val changelogFile = file(if (isTemplateRepo) "gradle/template/CHANGELOG.md" else "CHANGELOG.md")
 
 changelog {
-    version.set(modVersion)
+    version.set(mod.version)
     versionPrefix.set("")
     groups.set(changelogGroups)
-    repositoryUrl.set(modUrl)
+    repositoryUrl.set(mod.url)
     path = changelogFile.canonicalPath
 }
 
@@ -1588,9 +1608,9 @@ tasks.register("verifyRelease") {
     description = "Fails unless tree is clean, HEAD is untagged and the version is final"
     notCompatibleWithConfigurationCache("runs git")
     doLast {
-        check(git("status", "--porcelain").isEmpty()) { "Working tree is not clean" }
-        check(git("tag", "--points-at", "HEAD").isEmpty()) { "HEAD is already tagged, nothing to release" }
-        check('-' !in modVersion) { "Not a release version ($modVersion). Run with -Preckon.stage=final" }
+        check(runner.git("status", "--porcelain").isEmpty()) { "Working tree is not clean" }
+        check(runner.git("tag", "--points-at", "HEAD").isEmpty()) { "HEAD is already tagged, nothing to release" }
+        check('-' !in mod.version) { "Not a release version (${mod.version}). Run with -Preckon.stage=final" }
         delete(fileTree(layout.buildDirectory.dir("libs")) { include("*.jar") })
     }
 }
@@ -1610,19 +1630,19 @@ tasks.register("tagRelease") {
     notCompatibleWithConfigurationCache("runs git")
     dependsOn("prepareRelease")
     doLast {
-        val diffLink = changelog.instance.get().links[modVersion]
+        val diffLink = changelog.instance.get().links[mod.version]
         val commitMsg =
             buildString {
-                appendLine("Release $modVersion")
+                appendLine("Release ${mod.version}")
                 appendLine("Diff: $diffLink")
-                appendLine(git("log", "-1", "--format='Signed-off-by: %an <%ae>'").removeSurrounding("'"))
+                appendLine(runner.git("log", "-1", "--format='Signed-off-by: %an <%ae>'").removeSurrounding("'"))
             }
         if (isTemplateRepo) {
-            versionedFiles.forEach { git("add", file(it.path).canonicalPath) }
+            versionedFiles.forEach { runner.git("add", file(it.path).canonicalPath) }
         }
-        git("add", changelogFile.canonicalPath)
-        git("commit", "-m", commitMsg)
-        git("tag", "-a", modVersion, "-m", changelog.renderItem(changelog.get(modVersion), Changelog.OutputType.PLAIN_TEXT))
+        runner.git("add", changelogFile.canonicalPath)
+        runner.git("commit", "-m", commitMsg)
+        runner.git("tag", "-a", mod.version, "-m", changelog.renderItem(changelog.get(mod.version), Changelog.OutputType.PLAIN_TEXT))
     }
 }
 tasks.register("collectCommits") {
@@ -1632,9 +1652,9 @@ tasks.register("collectCommits") {
     mustRunAfter("verifyRelease")
     doLast {
         // commits since last version tag
-        val lastTag = runCatching { git("describe", "--tags", "--abbrev=0", "--match", "[0-9]*") }.getOrNull()
+        val lastTag = runCatching { runner.git("describe", "--tags", "--abbrev=0", "--match", "[0-9]*") }.getOrNull()
         val range = if (lastTag != null) "$lastTag..HEAD" else "HEAD"
-        val subjects = git("log", range, "--no-merges", "--pretty=format:%s").lines().filter { it.isNotBlank() && !it.startsWith("Release ") }
+        val subjects = runner.git("log", range, "--no-merges", "--pretty=format:%s").lines().filter { it.isNotBlank() && !it.startsWith("Release ") }
 
         // classify: "fix: x" -> Bugfixes, "misc: x" -> Miscellaneous, else Changes
         val prefix = Regex("^(add|fix|misc)\\s*:\\s*(.+)$", RegexOption.IGNORE_CASE)
@@ -1721,17 +1741,18 @@ tasks.register("verifyPushed") {
     notCompatibleWithConfigurationCache("runs git")
     mustRunAfter("pushRelease")
     doLast {
-        if (props.get("modrinth_debug", false).toBoolean() && props.get("curseforge_debug", false).toBoolean()) return@doLast
-        check('-' !in modVersion) { "Not a release version ($modVersion), refusing to publish" }
-        val head = git("rev-parse", "HEAD")
-        git("remote").split("\n").forEach { remote ->
+        if (props.flag("modrinth_debug", false) && props.flag("curseforge_debug", false)) return@doLast
+        check('-' !in mod.version) { "Not a release version (${mod.version}), refusing to publish" }
+        val head = runner.git("rev-parse", "HEAD")
+        runner.git("remote").split("\n").forEach { remote ->
             val remoteShas =
-                git("ls-remote", "--tags", remote)
+                runner
+                    .git("ls-remote", "--tags", remote)
                     .lines()
                     .map { it.split('\t') }
-                    .filter { it.size == 2 && (it[1] == "refs/tags/$modVersion^{}" || it[1] == "refs/tags/$modVersion") }
+                    .filter { it.size == 2 && (it[1] == "refs/tags/${mod.version}^{}" || it[1] == "refs/tags/${mod.version}") }
                     .map { it[0] }
-            check(head in remoteShas) { "Tag $modVersion is not on $remote at HEAD ($head). Push it first; nothing was published." }
+            check(head in remoteShas) { "Tag ${mod.version} is not on $remote at HEAD ($head). Push it first; nothing was published." }
         }
     }
 }
@@ -1741,7 +1762,7 @@ tasks.register("pushRelease") {
     notCompatibleWithConfigurationCache("runs git")
     dependsOn("tagRelease")
     doLast {
-        git("remote").split("\n").forEach { git("push", "--atomic", it, "HEAD", "refs/tags/$modVersion") }
+        runner.git("remote").split("\n").forEach { runner.git("push", "--atomic", it, "HEAD", "refs/tags/${mod.version}") }
     }
 }
 tasks.register("releaseAndPublish") {
@@ -1776,8 +1797,7 @@ fun moddexLookup(
             "modrinth_id" to modrinthId,
         ).mapNotNull { (key, value) ->
             value?.trim()?.takeIf { it.isNotBlank() }?.let { key to URLEncoder.encode(it, "UTF-8") }
-        }
-    if (params.isEmpty()) return null
+        }.ifEmpty { return null }
 
     val query = params.joinToString("&") { (key, value) -> "$key=$value" }
     return parseModdex(fetchText("https://moddex.gg/api/v2/lookup?$query"))
