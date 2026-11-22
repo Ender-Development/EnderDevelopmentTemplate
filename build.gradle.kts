@@ -807,19 +807,19 @@ configure<SpotlessExtension> {
         trimTrailingWhitespace()
         endWithNewline()
     }
-    if (editorconfig != "spotless") return@configure
-
     fun cSpan(): String {
         val yFrom = runner.git("log", "--max-parents=0", "--format=%as").split("-").first()
         val yLast = runner.git("log", "-1", "--format=%as").split("-").first()
         return if (yFrom == yLast) yFrom else "$yFrom-$yLast"
     }
 
-    val header = "/*\n * Copyright (c) ${cSpan()} ${props.list("mod_authors", ",").first().trim()}\n * SPDX-License-Identifier: $rmLicense\n */\n\n"
+    val header = "/*\n * Copyright (c) ${cSpan()} ${mod.authors.first()}\n * SPDX-License-Identifier: $rmLicense\n */\n\n"
     java {
         target("src/main/java/**/*.java")
-        importOrder()
+        licenseHeader(header)
         removeUnusedImports()
+        if (editorconfig != "spotless") return@java
+        importOrder()
         forbidWildcardImports()
         shortenFullyQualifiedTypes()
         princeOfSpace(libs.versions.princeOfSpace.get())
@@ -830,12 +830,12 @@ configure<SpotlessExtension> {
             .trailingCommas(true)
             .javaLanguageLevel(8)
         formatAnnotations()
-        licenseHeader(header)
     }
     kotlin {
         target("src/main/kotlin/**/*.kt")
-        ktlint(libs.versions.ktlint.get()).editorConfigOverride(mapOf("ktlint_standard_package-name" to "disabled"))
         licenseHeader(header)
+        if (editorconfig != "spotless") return@kotlin
+        ktlint(libs.versions.ktlint.get()).editorConfigOverride(mapOf("ktlint_standard_package-name" to "disabled"))
     }
     kotlinGradle {
         target("*.gradle.kts")
