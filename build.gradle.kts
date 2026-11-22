@@ -71,7 +71,7 @@ plugins {
     alias(libs.plugins.jetbrains.changelog)
     alias(libs.plugins.mod.publish)
 }
-
+// region Setup
 val props = PropertyManager()
 
 class PropertyManager {
@@ -420,6 +420,7 @@ val moddexProject: ModdexProject? by lazy {
 val isPublished = moddexProject != null
 val publishToCurseForge = props.flag("publish_to_curseforge", false) && isPublished && moddexProject!!.curseforge != null
 val publishToModrinth = props.flag("publish_to_modrinth", false) && isPublished && moddexProject!!.modrinth != null
+// endregion
 
 group = rootPackage
 
