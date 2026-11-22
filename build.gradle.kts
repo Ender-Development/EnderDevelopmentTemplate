@@ -281,6 +281,64 @@ data class ModDependency(
     val optional: Boolean = false,
 )
 
+data class Platform(
+    val id: String,
+    val url: String,
+    val downloadsCount: Long,
+)
+
+data class ModdexProject(
+    val id: Int,
+    val slug: String,
+    val rating: Double?,
+    val curseforge: Platform?,
+    val modrinth: Platform?,
+)
+
+fun moddexLookup(
+    moddexId: String? = null,
+    curseforgeId: String? = null,
+    modrinthId: String? = null,
+): ModdexProject? {
+    val params =
+        listOf(
+            "moddex_id" to moddexId,
+            "curseforge_id" to curseforgeId,
+            "modrinth_id" to modrinthId,
+        ).mapNotNull { (key, value) ->
+            value?.trim()?.takeIf { it.isNotBlank() }?.let { key to URLEncoder.encode(it, "UTF-8") }
+        }.ifEmpty { return null }
+
+    val query = params.joinToString("&") { (key, value) -> "$key=$value" }
+    return parseModdex(fetchText("https://moddex.gg/api/v2/lookup?$query"))
+}
+
+fun parseModdex(text: String): ModdexProject {
+    val data =
+        Json
+            .parseToJsonElement(text)
+            .jsonObject
+            .getValue("data")
+            .jsonObject
+
+    fun platform(key: String): Platform? {
+        val o = data[key] as? JsonObject ?: return null
+        return Platform(
+            id = o.getValue("id").jsonPrimitive.content,
+            url = o.getValue("url").jsonPrimitive.content,
+            downloadsCount = o["downloads_count"]?.jsonPrimitive?.longOrNull ?: 0,
+        )
+    }
+
+    return ModdexProject(
+        id = data.getValue("id").jsonPrimitive.int,
+        slug = data.getValue("slug").jsonPrimitive.content,
+        rating = (data["rating"] as? JsonObject)?.get("average")?.jsonPrimitive?.doubleOrNull,
+        curseforge = platform("curseforge"),
+        modrinth = platform("modrinth"),
+    )
+}
+
 fun MinimalExternalModuleDependency.toCord(): String = "${this.group}:${this.name}:${this.version}"
 
 val markdownChangelog: Provider<String> =
@@ -804,21 +862,22 @@ if (featAccessTransformer.enabled) {
     tasks.applyJST.configure { accessTransformerFiles.from(atFile) }
 }
 
-tasks.register("afterSync") {
-    group = "ender-development"
-    description = "Task that runs after the template has been synced. Can be used for custom actions."
-    dependsOn(
-        tasks.injectTags,
-        "switchEditorConfig",
-        "createReference",
-        "createIJScope",
-        "checkBuildScriptUpdate",
-        "generateMixinJson",
-        "checkPropertyDocs",
-    )
-    doLast { logger.lifecycle("Current Project Version: ${mod.version}") }
-    finalizedBy(tasks.spotlessApply)
-}
+val afterSync =
+    tasks.register("afterSync") {
+        group = "ender-development"
+        description = "Task that runs after the template has been synced. Can be used for custom actions."
+        dependsOn(
+            tasks.injectTags,
+            switchEditorConfig,
+            createReference,
+            createIJScope,
+            checkBuildScriptUpdate,
+            generateMixinJson,
+            checkPropertyDocs,
+        )
+        doLast { logger.lifecycle("Current Project Version: ${mod.version}") }
+        finalizedBy(tasks.spotlessApply)
+    }
 
 fun guessIndent(): String {
     val default = "    "
@@ -879,144 +938,149 @@ tasks.decompressDecompiledSources {
             .asFile
             .exists()
 }
-tasks.register("prioritizeCoremods") {
-    description = "Load MixinBooter and ConfigAnytime before everything else"
-    dependsOn(tasks.prepareObfModsFolder)
-    doLast {
-        val identifier = Regex("(mixinbooter|configanytime)-[0-9]+\\.[0-9]+\\.jar")
-        fileTree("run/obfuscated").filter { it.isFile && it.name.matches(identifier) }.forEach { it.renameTo(File(it.parentFile, "!${it.name}")) }
-    }
-}
-
-tasks.register("createReference") {
-    group = "ender-development"
-    description = "Generates the Reference.kt file from tags.properties."
-    onlyIf { featKotlin.enabled && featTags.enabled }
-    doLast {
-        val tagsFile = "tags.properties"
-        val tagsPath = featTags.className.removeSuffix(".Tags")
-        val objectName = mod.name.filter(Char::isLetterOrDigit)
-        val tags = props.load(tagsFile)
-        val indent = guessIndent()
-        val reference =
-            buildString {
-                appendLine("package $tagsPath")
-                appendLine("")
-                appendLine("internal typealias Reference = ${objectName}Reference")
-                appendLine("")
-                appendLine("/**")
-                appendLine(" * Auto-generated reference object containing constants from `$tagsFile`.")
-                appendLine(" * Don't change this file manually as it will be overwritten.")
-                appendLine(" */")
-                appendLine("@Suppress(\"UNUSED\")")
-                appendLine("object ${objectName}Reference {")
-                appendLine("$indent// buildscript defaults")
-                mapOf(
-                    "KOTLIN_VERSION" to libs.versions.kotlin.get(),
-                    "FORGELIN_VERSION" to "${libs.versions.kotlin.get()}.0",
-                    "KOTLIN_LANGUAGE_ADAPTER" to "io.github.chaosunity.forgelin.KotlinAdapter",
-                    "GROOVYSCRIPT_VERSION" to libs.versions.groovyscript.get(),
-                    "CRAFTTWEAKER_VERSION" to libs.versions.crafttweaker.get(),
-                    "HADENOUGHITEMS_VERSION" to libs.versions.hei.get(),
-                    "THEONEPROBE_VERSION" to libs.versions.top.get(),
-                    "CATALYX_VERSION" to libs.versions.catalyx.get(),
-                    "CONFIGANYTIME_VERSION" to libs.versions.configanytime.get(),
-                    "ASSETMOVER_VERSION" to libs.versions.assetmover.get(),
-                    "MIXINBOOTER_VERSION" to libs.versions.mixinBooter.get(),
-                ).forEach { (key, value) -> appendLine("${indent}const val $key = \"$value\"") }
-                appendLine("$indent// project-specific tags")
-                tags.forEach { (key, value) ->
-                    val entry = if (value.toDoubleOrNull() != null) value else "\"${value.replace("\"", "\\\"")}\""
-                    appendLine("${indent}const val $key = $entry")
-                }
-                appendLine("}")
-            }
-        val outputPath = "src/main/kotlin/${tagsPath.replace(".", "/")}/${objectName}Reference.kt"
-        val outputFile = layout.projectDirectory.file(outputPath).asFile
-        outputFile.parentFile.mkdirs()
-        outputFile.writeText(reference.replace("\n", System.lineSeparator()))
-    }
-}
-
-tasks.register("switchEditorConfig") {
-    group = "ender-development"
-    description = "Switches the .editorconfig file based on the 'editorconfig' property."
-    val spotlessEditorConfig = file("$projectDir/gradle/template/.editorconfig.spotless")
-    val rozEditorConfig = file("$projectDir/gradle/template/.editorconfig.roz")
-
-    val destination = file("$projectDir/.editorconfig")
-
-    onlyIf { !props.flag("disable_editorconfig", false) }
-
-    doFirst {
-        val sourceFile =
-            when (editorconfig) {
-                "spotless" -> spotlessEditorConfig
-                "roz" -> rozEditorConfig
-                else -> throw IllegalArgumentException("Unknown editorConfigType: $editorconfig")
-            }
-        if (!sourceFile.exists()) {
-            throw GradleException("Source .editorconfig file '${sourceFile.path}' does not exist!")
-        }
-        Files.copy(sourceFile.toPath(), destination.toPath(), StandardCopyOption.REPLACE_EXISTING)
-    }
-}
-
-tasks.register("createIJScope") {
-    group = "ender-development"
-    description = "Creates the IntelliJ scope file for the mod sources"
-    onlyIf { !isTemplateRepo }
-    inputs.property("modName", mod.name)
-    val outputFile = layout.projectDirectory.file(".idea/scopes/Mod_Source.xml")
-    outputs.file(outputFile)
-    doLast {
-        val filtered = mod.name.filter(Char::isLetterOrDigit)
-
-        val ijScope =
-            buildString {
-                appendLine("<component name=\"DependencyValidationManager\">")
-                appendLine("  <scope name=\"${mod.name} Source\" pattern=\"file[$filtered.main]:*/&amp;&amp;!file[$filtered.main]:resources//*\" />")
-                appendLine("</component>")
-            }
-
-        val file = outputFile.asFile
-        file.parentFile.mkdirs()
-        file.writeText(ijScope)
-        logger.lifecycle("IntelliJ scope file created at ${file.toPath().normalize()}")
-    }
-}
-
-tasks.register("generateMixinJson") {
-    group = "ender-development"
-    description = "Generate missing mixin files"
-
-    fun mixinCfg(name: String) = "src/main/resources/mixins/mixins.${mod.id}.$name.json"
-    val missingConfigs = props.list("mixin_configs").filter { !file(mixinCfg(it)).exists() }
-    onlyIf { featMixins.enabled && props.flag("generate_mixin_json", true) && missingConfigs.isNotEmpty() }
-    doLast {
-        missingConfigs.forEach {
-            val mixinCfg = file(mixinCfg(it))
-
-            val format =
-                Json {
-                    prettyPrint = true
-                    prettyPrintIndent = guessIndent()
-                }
-            val cfg =
-                buildJsonObject {
-                    put("package", "$rootPackage.${mod.id}.")
-                    put("refmap", $$"${mixin_refmap}")
-                    put("target", "@env(DEFAULT)")
-                    put("minVersion", "0.8.5")
-                    put("compatibilityLevel", "JAVA_8")
-                    putJsonArray("mixins") { }
-                    putJsonArray("server") { }
-                    putJsonArray("client") { }
-                }
-            mixinCfg.writeText(format.encodeToString(JsonObject.serializer(), cfg))
+val prioritizeCoremods =
+    tasks.register("prioritizeCoremods") {
+        description = "Load MixinBooter and ConfigAnytime before everything else"
+        dependsOn(tasks.prepareObfModsFolder)
+        doLast {
+            val identifier = Regex("(mixinbooter|configanytime)-[0-9]+\\.[0-9]+\\.jar")
+            fileTree("run/obfuscated").filter { it.isFile && it.name.matches(identifier) }.forEach { it.renameTo(File(it.parentFile, "!${it.name}")) }
         }
     }
-}
+
+val createReference =
+    tasks.register("createReference") {
+        group = "ender-development"
+        description = "Generates the Reference.kt file from tags.properties."
+        onlyIf { featKotlin.enabled && featTags.enabled }
+        doLast {
+            val tagsFile = "tags.properties"
+            val tagsPath = featTags.className.removeSuffix(".Tags")
+            val objectName = mod.name.filter(Char::isLetterOrDigit)
+            val tags = props.load(tagsFile)
+            val indent = guessIndent()
+            val reference =
+                buildString {
+                    appendLine("package $tagsPath")
+                    appendLine("")
+                    appendLine("internal typealias Reference = ${objectName}Reference")
+                    appendLine("")
+                    appendLine("/**")
+                    appendLine(" * Auto-generated reference object containing constants from `$tagsFile`.")
+                    appendLine(" * Don't change this file manually as it will be overwritten.")
+                    appendLine(" */")
+                    appendLine("@Suppress(\"UNUSED\")")
+                    appendLine("object ${objectName}Reference {")
+                    appendLine("$indent// buildscript defaults")
+                    mapOf(
+                        "KOTLIN_VERSION" to libs.versions.kotlin.get(),
+                        "FORGELIN_VERSION" to "${libs.versions.kotlin.get()}.0",
+                        "KOTLIN_LANGUAGE_ADAPTER" to "io.github.chaosunity.forgelin.KotlinAdapter",
+                        "GROOVYSCRIPT_VERSION" to libs.versions.groovyscript.get(),
+                        "CRAFTTWEAKER_VERSION" to libs.versions.crafttweaker.get(),
+                        "HADENOUGHITEMS_VERSION" to libs.versions.hei.get(),
+                        "THEONEPROBE_VERSION" to libs.versions.top.get(),
+                        "CATALYX_VERSION" to libs.versions.catalyx.get(),
+                        "CONFIGANYTIME_VERSION" to libs.versions.configanytime.get(),
+                        "ASSETMOVER_VERSION" to libs.versions.assetmover.get(),
+                        "MIXINBOOTER_VERSION" to libs.versions.mixinBooter.get(),
+                    ).forEach { (key, value) -> appendLine("${indent}const val $key = \"$value\"") }
+                    appendLine("$indent// project-specific tags")
+                    tags.forEach { (key, value) ->
+                        val entry = if (value.toDoubleOrNull() != null) value else "\"${value.replace("\"", "\\\"")}\""
+                        appendLine("${indent}const val $key = $entry")
+                    }
+                    appendLine("}")
+                }
+            val outputPath = "src/main/kotlin/${tagsPath.replace(".", "/")}/${objectName}Reference.kt"
+            val outputFile = layout.projectDirectory.file(outputPath).asFile
+            outputFile.parentFile.mkdirs()
+            outputFile.writeText(reference.replace("\n", System.lineSeparator()))
+        }
+    }
+
+val switchEditorConfig =
+    tasks.register("switchEditorConfig") {
+        group = "ender-development"
+        description = "Switches the .editorconfig file based on the 'editorconfig' property."
+        val spotlessEditorConfig = file("$projectDir/gradle/template/.editorconfig.spotless")
+        val rozEditorConfig = file("$projectDir/gradle/template/.editorconfig.roz")
+
+        val destination = file("$projectDir/.editorconfig")
+
+        onlyIf { !props.flag("disable_editorconfig", false) }
+
+        doFirst {
+            val sourceFile =
+                when (editorconfig) {
+                    "spotless" -> spotlessEditorConfig
+                    "roz" -> rozEditorConfig
+                    else -> throw IllegalArgumentException("Unknown editorConfigType: $editorconfig")
+                }
+            if (!sourceFile.exists()) {
+                throw GradleException("Source .editorconfig file '${sourceFile.path}' does not exist!")
+            }
+            Files.copy(sourceFile.toPath(), destination.toPath(), StandardCopyOption.REPLACE_EXISTING)
+        }
+    }
+
+val createIJScope =
+    tasks.register("createIJScope") {
+        group = "ender-development"
+        description = "Creates the IntelliJ scope file for the mod sources"
+        onlyIf { !isTemplateRepo }
+        inputs.property("modName", mod.name)
+        val outputFile = layout.projectDirectory.file(".idea/scopes/Mod_Source.xml")
+        outputs.file(outputFile)
+        doLast {
+            val filtered = mod.name.filter(Char::isLetterOrDigit)
+
+            val ijScope =
+                buildString {
+                    appendLine("<component name=\"DependencyValidationManager\">")
+                    appendLine("  <scope name=\"${mod.name} Source\" pattern=\"file[$filtered.main]:*/&amp;&amp;!file[$filtered.main]:resources//*\" />")
+                    appendLine("</component>")
+                }
+
+            val file = outputFile.asFile
+            file.parentFile.mkdirs()
+            file.writeText(ijScope)
+            logger.lifecycle("IntelliJ scope file created at ${file.toPath().normalize()}")
+        }
+    }
+
+val generateMixinJson =
+    tasks.register("generateMixinJson") {
+        group = "ender-development"
+        description = "Generate missing mixin files"
+
+        fun mixinCfg(name: String) = "src/main/resources/mixins/mixins.${mod.id}.$name.json"
+        val missingConfigs = props.list("mixin_configs").filter { !file(mixinCfg(it)).exists() }
+        onlyIf { featMixins.enabled && props.flag("generate_mixin_json", true) && missingConfigs.isNotEmpty() }
+        doLast {
+            missingConfigs.forEach {
+                val mixinCfg = file(mixinCfg(it))
+
+                val format =
+                    Json {
+                        prettyPrint = true
+                        prettyPrintIndent = guessIndent()
+                    }
+                val cfg =
+                    buildJsonObject {
+                        put("package", "$rootPackage.${mod.id}.")
+                        put("refmap", $$"${mixin_refmap}")
+                        put("target", "@env(DEFAULT)")
+                        put("minVersion", "0.8.5")
+                        put("compatibilityLevel", "JAVA_8")
+                        putJsonArray("mixins") { }
+                        putJsonArray("server") { }
+                        putJsonArray("client") { }
+                    }
+                mixinCfg.writeText(format.encodeToString(JsonObject.serializer(), cfg))
+            }
+        }
+    }
 
 tasks.withType<ProcessResources> {
     // This will ensure that this task is redone when the versions change
@@ -1241,13 +1305,15 @@ fun mergeUserSection(
     return (managed + userPart).joinToString("\n").trimEnd() + "\n"
 }
 
-tasks.register("checkBuildScriptLatest") {
-    group = "ender-development"
-    description = "Get the version number of the latest release"
-    onlyIf { !isTemplateRepo }
-    dependsOn("checkGradleUpdate")
-    doLast { logger.lifecycle("Latest Buildscript Release: ${resolveLatestTag()}") }
-}
+val checkBuildScriptLatest =
+    tasks.register("checkBuildScriptLatest") {
+        group = "ender-development"
+        description = "Get the version number of the latest release"
+        notCompatibleWithConfigurationCache("Performs a network lookup")
+        onlyIf { !isTemplateRepo }
+        dependsOn(checkGradleUpdate)
+        doLast { logger.lifecycle("Latest Buildscript Release: ${resolveLatestTag()}") }
+    }
 
 fun fetchLatestGradleVersion(): String {
     val json = JsonSlurper().parseText(fetchText("https://services.gradle.org/versions/current")) as Map<*, *>
@@ -1260,101 +1326,107 @@ fun fetchSha256(url: String): String {
     return hash
 }
 
-tasks.register("checkGradleUpdate") {
-    group = "ender-development"
-    description = "Checks whether a newer Gradle release is available."
-    notCompatibleWithConfigurationCache("Performs a network lookup")
-    doLast {
-        val latest = fetchLatestGradleVersion()
-        when {
-            latest != gradle.gradleVersion -> logger.lifecycle("Gradle $latest is available (you're on ${gradle.gradleVersion}). Run `./gradlew updateGradle` to upgrade.")
-            else -> logger.lifecycle("Gradle is up to date (${gradle.gradleVersion}).")
+val checkGradleUpdate =
+    tasks.register("checkGradleUpdate") {
+        group = "ender-development"
+        description = "Checks whether a newer Gradle release is available."
+        notCompatibleWithConfigurationCache("Performs a network lookup")
+        doLast {
+            val latest = fetchLatestGradleVersion()
+            when {
+                latest != gradle.gradleVersion -> logger.lifecycle("Gradle $latest is available (you're on ${gradle.gradleVersion}). Run `./gradlew updateGradle` to upgrade.")
+                else -> logger.lifecycle("Gradle is up to date (${gradle.gradleVersion}).")
+            }
         }
     }
-}
 
-tasks.register("updateGradle") {
-    group = "ender-development"
-    description = "Points the Gradle wrapper at the latest release and ensures a checksum is set."
-    notCompatibleWithConfigurationCache("Performs a network lookup")
+val updateGradle =
+    tasks.register("updateGradle") {
+        group = "ender-development"
+        description = "Points the Gradle wrapper at the latest release and ensures a checksum is set."
+        notCompatibleWithConfigurationCache("Performs a network lookup")
 
-    val propsFile = rootProject.file("gradle/wrapper/gradle-wrapper.properties")
+        val propsFile = rootProject.file("gradle/wrapper/gradle-wrapper.properties")
 
-    doLast {
-        val latest = fetchLatestGradleVersion()
-        val props = props.load(propsFile.path).toMutableMap()
-        val oldUrl = props["distributionUrl"] ?: throw GradleException("No 'distributionUrl' in $propsFile")
+        doLast {
+            val latest = fetchLatestGradleVersion()
+            val props = props.load(propsFile.path).toMutableMap()
+            val oldUrl = props["distributionUrl"] ?: throw GradleException("No 'distributionUrl' in $propsFile")
 
-        val type = if (oldUrl.endsWith("-all.zip")) "all" else "bin"
-        val newUrl = oldUrl.substringBeforeLast("/") + "/gradle-$latest-$type.zip"
+            val type = if (oldUrl.endsWith("-all.zip")) "all" else "bin"
+            val newUrl = oldUrl.substringBeforeLast("/") + "/gradle-$latest-$type.zip"
 
-        val urlChanged = newUrl != oldUrl
-        val shaMissing = props["distributionSha256Sum"].isNullOrBlank()
+            val urlChanged = newUrl != oldUrl
+            val shaMissing = props["distributionSha256Sum"].isNullOrBlank()
 
-        if (!urlChanged && !shaMissing) {
-            logger.lifecycle("Gradle wrapper is already on $latest with a checksum set.")
-            return@doLast
-        }
-
-        // Fetched before anything is written, so a failure leaves the file untouched
-        val sha =
-            try {
-                fetchSha256("https://services.gradle.org/distributions/gradle-$latest-$type.zip.sha256")
-            } catch (e: Exception) {
-                throw GradleException("Could not fetch the checksum for Gradle $latest: ${e.message}", e)
+            if (!urlChanged && !shaMissing) {
+                logger.lifecycle("Gradle wrapper is already on $latest with a checksum set.")
+                return@doLast
             }
 
-        props["distributionUrl"] = newUrl
-        props["distributionSha256Sum"] = sha
+            // Fetched before anything is written, so a failure leaves the file untouched
+            val sha =
+                try {
+                    fetchSha256("https://services.gradle.org/distributions/gradle-$latest-$type.zip.sha256")
+                } catch (e: Exception) {
+                    throw GradleException("Could not fetch the checksum for Gradle $latest: ${e.message}", e)
+                }
 
-        val out = props.map { (k, v) -> "$k = $v" }.sorted().joinToString("\n", prefix = "# Managed by Ender-Development.org buildscripts", postfix = "\n")
+            props["distributionUrl"] = newUrl
+            props["distributionSha256Sum"] = sha
 
-        propsFile.writeText(out)
+            val out = props.map { (k, v) -> "$k = $v" }.sorted().joinToString("\n", prefix = "# Managed by Ender-Development.org buildscripts", postfix = "\n")
 
-        logger.lifecycle(
-            when {
-                urlChanged -> "Wrapper updated to $latest. Reload the Gradle project to apply it."
-                else -> "Already on $latest; added the missing checksum."
-            },
-        )
-    }
-}
+            propsFile.writeText(out)
 
-tasks.register("checkBuildScriptUpdate") {
-    group = "ender-development"
-    description = "Checks whether a newer build script version is available (does not modify anything)"
-    onlyIf { !isTemplateRepo }
-    dependsOn("checkBuildScriptLatest", "checkGradleUpdate")
-    doLast {
-        val updates = collectUpdates()
-        if (updates.isEmpty()) {
-            logger.lifecycle("Build script is up to date.")
-        } else {
-            logger.lifecycle("Build script update available! Run './gradlew updateBuildScript'")
-            for (u in updates) logger.lifecycle("  ${u.path} (${u.reason})")
+            logger.lifecycle(
+                when {
+                    urlChanged -> "Wrapper updated to $latest. Reload the Gradle project to apply it."
+                    else -> "Already on $latest; added the missing checksum."
+                },
+            )
         }
     }
-}
 
-tasks.register("updateBuildScript") {
-    group = "ender-development"
-    description = "Updates build.gradle.kts, gradle.properties and gradle/template/** to the latest version"
-    dependsOn("updateGradle")
-    doLast {
-        val updates = collectUpdates()
-        if (updates.isEmpty()) {
-            logger.lifecycle("Build script already up to date!")
-            return@doLast
+val checkBuildScriptUpdate =
+    tasks.register("checkBuildScriptUpdate") {
+        group = "ender-development"
+        description = "Checks whether a newer build script version is available (does not modify anything)"
+        notCompatibleWithConfigurationCache("Performs a network lookup")
+        onlyIf { !isTemplateRepo }
+        dependsOn(checkBuildScriptLatest, checkGradleUpdate)
+        doLast {
+            val updates = collectUpdates()
+            if (updates.isEmpty()) {
+                logger.lifecycle("Build script is up to date.")
+            } else {
+                logger.lifecycle("Build script update available! Run './gradlew updateBuildScript'")
+                for (u in updates) logger.lifecycle("  ${u.path} (${u.reason})")
+            }
         }
-        for (u in updates) {
-            val target = file(u.path)
-            target.parentFile.mkdirs()
-            target.writeText(u.content)
-            logger.lifecycle("Updated ${u.path} (${u.reason})")
-        }
-        logger.lifecycle("Build script updated. Please REIMPORT the project or RESTART your IDE!")
     }
-}
+
+val updateBuildScript =
+    tasks.register("updateBuildScript") {
+        group = "ender-development"
+        description = "Updates build.gradle.kts, gradle.properties and gradle/template/** to the latest version"
+        notCompatibleWithConfigurationCache("Performs a network lookup")
+        dependsOn(updateGradle)
+        doLast {
+            val updates = collectUpdates()
+            if (updates.isEmpty()) {
+                logger.lifecycle("Build script already up to date!")
+                return@doLast
+            }
+            for (u in updates) {
+                val target = file(u.path)
+                target.parentFile.mkdirs()
+                target.writeText(u.content)
+                logger.lifecycle("Updated ${u.path} (${u.reason})")
+            }
+            logger.lifecycle("Build script updated. Please REIMPORT the project or RESTART your IDE!")
+        }
+    }
 
 fun withVersionHeader(
     text: String,
@@ -1368,30 +1440,31 @@ fun withVersionHeader(
     return (listOf("$prefix$version$suffix") + body).joinToString(nl)
 }
 
-tasks.register("syncBuildScriptVersion") {
-    group = "ender-development"
-    description = "Writes the buildscript_version property into the version header of the versioned files"
+val syncBuildScriptVersion =
+    tasks.register("syncBuildScriptVersion") {
+        group = "ender-development"
+        description = "Writes the buildscript_version property into the version header of the versioned files"
 
-    onlyIf { isTemplateRepo }
-    mustRunAfter(tasks.patchChangelog)
-    doLast {
-        require(Regex("""\d+(\.\d+)*""").matches(mod.version)) {
-            "buildscript_version '${mod.version}' is not a valid version (expected e.g. 1.2.3)"
-        }
+        onlyIf { isTemplateRepo }
+        mustRunAfter(tasks.patchChangelog)
+        doLast {
+            require(Regex("""\d+(\.\d+)*""").matches(mod.version)) {
+                "buildscript_version '${mod.version}' is not a valid version (expected e.g. 1.2.3)"
+            }
 
-        versionedFiles.forEach {
-            val target = file(it.path)
-            val old = target.readText()
-            val new = withVersionHeader(old, it.headerPrefix, it.headerSuffix, mod.version)
-            if (new != old) {
-                target.writeText(new)
-                logger.lifecycle("Set ${it.path} header to ${it.headerPrefix}${mod.version}${it.headerSuffix}")
-            } else {
-                logger.lifecycle("${it.path} already at ${mod.version}")
+            versionedFiles.forEach {
+                val target = file(it.path)
+                val old = target.readText()
+                val new = withVersionHeader(old, it.headerPrefix, it.headerSuffix, mod.version)
+                if (new != old) {
+                    target.writeText(new)
+                    logger.lifecycle("Set ${it.path} header to ${it.headerPrefix}${mod.version}${it.headerSuffix}")
+                } else {
+                    logger.lifecycle("${it.path} already at ${mod.version}")
+                }
             }
         }
     }
-}
 
 // Documentation Generation
 enum class PropKind { PROP, LIST, ENV, FLAG }
@@ -1545,59 +1618,61 @@ fun renderPropDocs(
     }
 }
 
-tasks.register("checkPropertyDocs") {
-    group = "ender-development"
-    description = "Logs properties used in the build script that are missing or incomplete in property-docs.json"
-    onlyIf { isTemplateRepo }
-    doLast {
-        val usages = scanAllProps()
-        val meta = loadPropMeta()
+val checkPropertyDocs =
+    tasks.register("checkPropertyDocs") {
+        group = "ender-development"
+        description = "Logs properties used in the build script that are missing or incomplete in property-docs.json"
+        onlyIf { isTemplateRepo }
+        doLast {
+            val usages = scanAllProps()
+            val meta = loadPropMeta()
 
-        val missing = usages.keys - meta.keys
-        val incomplete = usages.keys.filter { it in meta && !meta.getValue(it).isComplete }
-        val stale = meta.keys - usages.keys
+            val missing = usages.keys - meta.keys
+            val incomplete = usages.keys.filter { it in meta && !meta.getValue(it).isComplete }
+            val stale = meta.keys - usages.keys
 
-        if (missing.isEmpty() && incomplete.isEmpty() && stale.isEmpty()) {
-            logger.lifecycle("All ${usages.size} properties are documented.")
-            return@doLast
+            if (missing.isEmpty() && incomplete.isEmpty() && stale.isEmpty()) {
+                logger.lifecycle("All ${usages.size} properties are documented.")
+                return@doLast
+            }
+            if (missing.isNotEmpty()) {
+                logger.lifecycle("${missing.size} properties not in ${propMetaFile.name}:")
+                missing.forEach { logger.lifecycle("  $it (${usages.getValue(it).first().let { u -> "${u.file}:${u.line}" }})") }
+            }
+            if (incomplete.isNotEmpty()) {
+                logger.lifecycle("${incomplete.size} properties with empty category or description:")
+                incomplete.forEach { logger.lifecycle("  $it") }
+            }
+            if (stale.isNotEmpty()) {
+                logger.lifecycle("${stale.size} entries no longer used in the build script:")
+                stale.forEach { logger.lifecycle("  $it") }
+            }
+            logger.lifecycle("Run './gradlew generatePropertyDocs' to add stubs and regenerate PROPERTIES.md.")
         }
-        if (missing.isNotEmpty()) {
-            logger.lifecycle("${missing.size} properties not in ${propMetaFile.name}:")
-            missing.forEach { logger.lifecycle("  $it (${usages.getValue(it).first().let { u -> "${u.file}:${u.line}" }})") }
-        }
-        if (incomplete.isNotEmpty()) {
-            logger.lifecycle("${incomplete.size} properties with empty category or description:")
-            incomplete.forEach { logger.lifecycle("  $it") }
-        }
-        if (stale.isNotEmpty()) {
-            logger.lifecycle("${stale.size} entries no longer used in the build script:")
-            stale.forEach { logger.lifecycle("  $it") }
-        }
-        logger.lifecycle("Run './gradlew generatePropertyDocs' to add stubs and regenerate PROPERTIES.md.")
     }
-}
 
-tasks.register("generatePropertyDocs") {
-    group = "ender-development"
-    description = "Adds new properties to property-docs.json and regenerates PROPERTIES.md"
-    onlyIf { isTemplateRepo }
-    doLast {
-        val usages = scanAllProps()
-        val meta = loadPropMeta().toMutableMap()
+val generatePropertyDocs =
+    tasks.register("generatePropertyDocs") {
+        group = "ender-development"
+        description = "Adds new properties to property-docs.json and regenerates PROPERTIES.md"
+        onlyIf { isTemplateRepo }
+        doLast {
+            val usages = scanAllProps()
+            val meta = loadPropMeta().toMutableMap()
 
-        val added = usages.keys.filter { it !in meta }
-        added.forEach { meta[it] = PropMeta("", "") }
-        savePropMeta(meta)
+            val added = usages.keys.filter { it !in meta }
+            added.forEach { meta[it] = PropMeta("", "") }
+            savePropMeta(meta)
 
-        propDocFile.writeText(renderPropDocs(usages, meta))
+            propDocFile.writeText(renderPropDocs(usages, meta))
 
-        if (added.isNotEmpty()) {
-            logger.lifecycle("Added ${added.size} new entries to ${propMetaFile.name}: ${added.joinToString()}")
-            logger.lifecycle("Fill in their category and description, then run this task again.")
+            if (added.isNotEmpty()) {
+                logger.lifecycle("Added ${added.size} new entries to ${propMetaFile.name}: ${added.joinToString()}")
+                logger.lifecycle("Fill in their category and description, then run this task again.")
+            }
+            logger.lifecycle("Wrote ${propDocFile.name} (${usages.size} properties).")
         }
-        logger.lifecycle("Wrote ${propDocFile.name} (${usages.size} properties).")
     }
-}
 
 val changelogGroups = listOf("Additions", "Changes", "Bugfixes", "Miscellaneous")
 val prefixToGroup = mapOf("add" to "Additions", "fix" to "Bugfixes", "misc" to "Miscellaneous")
@@ -1611,228 +1686,177 @@ changelog {
     path = changelogFile.canonicalPath
 }
 
-tasks.register("verifyRelease") {
-    group = "release"
-    description = "Fails unless tree is clean, HEAD is untagged and the version is final"
-    notCompatibleWithConfigurationCache("runs git")
-    doLast {
-        check(runner.git("status", "--porcelain").isEmpty()) { "Working tree is not clean" }
-        check(runner.git("tag", "--points-at", "HEAD").isEmpty()) { "HEAD is already tagged, nothing to release" }
-        check('-' !in mod.version) { "Not a release version (${mod.version}). Run with -Preckon.stage=final" }
-        delete(fileTree(layout.buildDirectory.dir("libs")) { include("*.jar") })
+val verifyRelease =
+    tasks.register("verifyRelease") {
+        group = "release"
+        description = "Fails unless tree is clean, HEAD is untagged and the version is final"
+        notCompatibleWithConfigurationCache("runs git")
+        doLast {
+            check(runner.git("status", "--porcelain").isEmpty()) { "Working tree is not clean" }
+            check(runner.git("tag", "--points-at", "HEAD").isEmpty()) { "HEAD is already tagged, nothing to release" }
+            check('-' !in mod.version) { "Not a release version (${mod.version}). Run with -Preckon.stage=final" }
+            delete(fileTree(layout.buildDirectory.dir("libs")) { include("*.jar") })
+        }
     }
-}
 tasks.patchChangelog { mustRunAfter("collectCommits") }
 tasks.withType<SpotlessTask>().configureEach {
-    mustRunAfter("collectCommits", tasks.patchChangelog, "syncBuildScriptVersion")
+    mustRunAfter(collectCommits, tasks.patchChangelog, syncBuildScriptVersion)
 }
 tasks.build { mustRunAfter(tasks.spotlessApply) }
-tasks.register("prepareRelease") {
-    group = "release"
-    description = "Prepares the final changes, updates version references etc."
-    dependsOn("verifyRelease", "collectCommits", tasks.patchChangelog, "syncBuildScriptVersion", tasks.spotlessApply, tasks.build)
-}
-tasks.register("tagRelease") {
-    group = "release"
-    description = "Builds, patches the changelog, commits and tags locally (nothing is pushed)"
-    notCompatibleWithConfigurationCache("runs git")
-    dependsOn("prepareRelease")
-    doLast {
-        val diffLink = changelog.instance.get().links[mod.version]
-        val commitMsg =
-            buildString {
-                appendLine("Release ${mod.version}")
-                appendLine("Diff: $diffLink")
-                appendLine(runner.git("log", "-1", "--format='Signed-off-by: %an <%ae>'").removeSurrounding("'"))
-            }
-        if (isTemplateRepo) {
-            versionedFiles.forEach { runner.git("add", file(it.path).canonicalPath) }
-        }
-        runner.git("add", changelogFile.canonicalPath)
-        runner.git("commit", "-m", commitMsg)
-        runner.git("tag", "-a", mod.version, "-m", changelog.renderItem(changelog.get(mod.version), Changelog.OutputType.PLAIN_TEXT))
+val prepareRelease =
+    tasks.register("prepareRelease") {
+        group = "release"
+        description = "Prepares the final changes, updates version references etc."
+        dependsOn(verifyRelease, collectCommits, tasks.patchChangelog, syncBuildScriptVersion, tasks.spotlessApply, tasks.build)
     }
-}
-tasks.register("collectCommits") {
-    group = "release"
-    description = "Adds commits since the last tag to [Unreleased], grouped by prefix"
-    notCompatibleWithConfigurationCache("runs git")
-    mustRunAfter("verifyRelease")
-    doLast {
-        // commits since last version tag
-        val lastTag = runCatching { runner.git("describe", "--tags", "--abbrev=0", "--match", "[0-9]*") }.getOrNull()
-        val range = if (lastTag != null) "$lastTag..HEAD" else "HEAD"
-        val subjects = runner.git("log", range, "--no-merges", "--pretty=format:%s").lines().filter { it.isNotBlank() && !it.startsWith("Release ") }
-
-        // classify: "fix: x" -> Bugfixes, "misc: x" -> Miscellaneous, else Changes
-        val prefix = Regex("^(add|fix|misc)\\s*:\\s*(.+)$", RegexOption.IGNORE_CASE)
-        val newEntries: List<Pair<String, String>> =
-            subjects.map { s ->
-                val m = prefix.find(s)
-                if (m != null) {
-                    prefixToGroup.getValue(m.groupValues[1].lowercase()) to m.groupValues[2].trim()
-                } else {
-                    "Changes" to s.trim()
+val tagRelease =
+    tasks.register("tagRelease") {
+        group = "release"
+        description = "Builds, patches the changelog, commits and tags locally (nothing is pushed)"
+        notCompatibleWithConfigurationCache("runs git")
+        dependsOn(prepareRelease)
+        doLast {
+            val diffLink = changelog.instance.get().links[mod.version]
+            val commitMsg =
+                buildString {
+                    appendLine("Release ${mod.version}")
+                    appendLine("Diff: $diffLink")
+                    appendLine(runner.git("log", "-1", "--format='Signed-off-by: %an <%ae>'").removeSurrounding("'"))
                 }
+            if (isTemplateRepo) {
+                versionedFiles.forEach { runner.git("add", file(it.path).canonicalPath) }
             }
+            runner.git("add", changelogFile.canonicalPath)
+            runner.git("commit", "-m", commitMsg)
+            runner.git("tag", "-a", mod.version, "-m", changelog.renderItem(changelog.get(mod.version), Changelog.OutputType.PLAIN_TEXT))
+        }
+    }
+val collectCommits =
+    tasks.register("collectCommits") {
+        group = "release"
+        description = "Adds commits since the last tag to [Unreleased], grouped by prefix"
+        notCompatibleWithConfigurationCache("runs git")
+        mustRunAfter(verifyRelease)
+        doLast {
+            // commits since last version tag
+            val lastTag = runCatching { runner.git("describe", "--tags", "--abbrev=0", "--match", "[0-9]*") }.getOrNull()
+            val range = if (lastTag != null) "$lastTag..HEAD" else "HEAD"
+            val subjects = runner.git("log", range, "--no-merges", "--pretty=format:%s").lines().filter { it.isNotBlank() && !it.startsWith("Release ") }
 
-        // locate [Unreleased] section
-        val lines = changelogFile.readLines()
-        val start = lines.indexOfFirst { it.trim().startsWith("## [Unreleased]") }
-        require(start >= 0) { "No '## [Unreleased]' section in CHANGELOG.md" }
-        val linkRef = Regex("^\\[[^\\]]+\\]:\\s")
-        val end = (start + 1 until lines.size).firstOrNull { lines[it].startsWith("## ") || linkRef.containsMatchIn(lines[it]) } ?: lines.size
-
-        // parse existing entries
-        val grouped = linkedMapOf<String, MutableList<String>>()
-        changelogGroups.forEach { grouped[it] = mutableListOf() }
-        var current = "Changes"
-        for (line in lines.subList(start + 1, end)) {
-            when {
-                line.startsWith("### ") -> {
-                    current = line.removePrefix("### ").trim()
-                    grouped.getOrPut(current) { mutableListOf() }
+            // classify: "fix: x" -> Bugfixes, "misc: x" -> Miscellaneous, else Changes
+            val prefix = Regex("^(add|fix|misc)\\s*:\\s*(.+)$", RegexOption.IGNORE_CASE)
+            val newEntries: List<Pair<String, String>> =
+                subjects.map { s ->
+                    val m = prefix.find(s)
+                    if (m != null) {
+                        prefixToGroup.getValue(m.groupValues[1].lowercase()) to m.groupValues[2].trim()
+                    } else {
+                        "Changes" to s.trim()
+                    }
                 }
 
-                line.isBlank() -> {
-                    continue
-                }
+            // locate [Unreleased] section
+            val lines = changelogFile.readLines()
+            val start = lines.indexOfFirst { it.trim().startsWith("## [Unreleased]") }
+            require(start >= 0) { "No '## [Unreleased]' section in CHANGELOG.md" }
+            val linkRef = Regex("^\\[[^\\]]+\\]:\\s")
+            val end = (start + 1 until lines.size).firstOrNull { lines[it].startsWith("## ") || linkRef.containsMatchIn(lines[it]) } ?: lines.size
 
-                line.startsWith("- ") || line.startsWith("* ") -> {
-                    grouped.getOrPut(current) { mutableListOf() }.add(line.drop(2).trim())
-                }
+            // parse existing entries
+            val grouped = linkedMapOf<String, MutableList<String>>()
+            changelogGroups.forEach { grouped[it] = mutableListOf() }
+            var current = "Changes"
+            for (line in lines.subList(start + 1, end)) {
+                when {
+                    line.startsWith("### ") -> {
+                        current = line.removePrefix("### ").trim()
+                        grouped.getOrPut(current) { mutableListOf() }
+                    }
 
-                else -> {
-                    val items = grouped[current]
-                    if (!items.isNullOrEmpty()) {
-                        items[items.lastIndex] = items.last() + "\n" + line
+                    line.isBlank() -> {
+                        continue
+                    }
+
+                    line.startsWith("- ") || line.startsWith("* ") -> {
+                        grouped.getOrPut(current) { mutableListOf() }.add(line.drop(2).trim())
+                    }
+
+                    else -> {
+                        val items = grouped[current]
+                        if (!items.isNullOrEmpty()) {
+                            items[items.lastIndex] = items.last() + "\n" + line
+                        }
                     }
                 }
             }
-        }
 
-        // merge, skipping anything already present
-        var added = 0
-        for ((group, text) in newEntries) {
-            if (grouped.values.none { text in it }) {
-                grouped.getOrPut(group) { mutableListOf() }.add(text)
-                added++
-            }
-        }
-        if (added == 0) {
-            logger.lifecycle("No new changelog entries")
-            return@doLast
-        }
-
-        // render in fixed group order, empty groups omitted
-        val body =
-            buildList {
-                add("")
-                grouped.filterValues { it.isNotEmpty() }.forEach { (g, items) ->
-                    add("### $g")
-                    items.forEach { add("- $it") }
-                    add("")
+            // merge, skipping anything already present
+            var added = 0
+            for ((group, text) in newEntries) {
+                if (grouped.values.none { text in it }) {
+                    grouped.getOrPut(group) { mutableListOf() }.add(text)
+                    added++
                 }
             }
-        val result = lines.subList(0, start + 1) + body + lines.subList(end, lines.size)
-        changelogFile.writeText(result.joinToString("\n") + "\n")
-        logger.lifecycle("Added $added changelog entries")
+            if (added == 0) {
+                logger.lifecycle("No new changelog entries")
+                return@doLast
+            }
+
+            // render in fixed group order, empty groups omitted
+            val body =
+                buildList {
+                    add("")
+                    grouped.filterValues { it.isNotEmpty() }.forEach { (g, items) ->
+                        add("### $g")
+                        items.forEach { add("- $it") }
+                        add("")
+                    }
+                }
+            val result = lines.subList(0, start + 1) + body + lines.subList(end, lines.size)
+            changelogFile.writeText(result.joinToString("\n") + "\n")
+            logger.lifecycle("Added $added changelog entries")
+        }
     }
-}
 tasks.withType<PublishToMavenRepository>().configureEach {
     dependsOn("verifyPushed")
     onlyIf { !isTemplateRepo }
 }
-tasks.register("verifyPushed") {
-    group = "release"
-    description = "Fails unless the release tag exists on remote and points at HEAD"
-    notCompatibleWithConfigurationCache("runs git")
-    mustRunAfter("pushRelease")
-    doLast {
-        if (props.flag("modrinth_debug", false) && props.flag("curseforge_debug", false)) return@doLast
-        check('-' !in mod.version) { "Not a release version (${mod.version}), refusing to publish" }
-        val head = runner.git("rev-parse", "HEAD")
-        runner.git("remote").split("\n").forEach { remote ->
-            val remoteShas =
-                runner
-                    .git("ls-remote", "--tags", remote)
-                    .lines()
-                    .map { it.split('\t') }
-                    .filter { it.size == 2 && (it[1] == "refs/tags/${mod.version}^{}" || it[1] == "refs/tags/${mod.version}") }
-                    .map { it[0] }
-            check(head in remoteShas) { "Tag ${mod.version} is not on $remote at HEAD ($head). Push it first; nothing was published." }
+val verifyPushed =
+    tasks.register("verifyPushed") {
+        group = "release"
+        description = "Fails unless the release tag exists on remote and points at HEAD"
+        notCompatibleWithConfigurationCache("runs git")
+        mustRunAfter(pushRelease)
+        doLast {
+            if (props.flag("modrinth_debug", false) && props.flag("curseforge_debug", false)) return@doLast
+            check('-' !in mod.version) { "Not a release version (${mod.version}), refusing to publish" }
+            val head = runner.git("rev-parse", "HEAD")
+            runner.git("remote").split("\n").forEach { remote ->
+                val remoteShas =
+                    runner
+                        .git("ls-remote", "--tags", remote)
+                        .lines()
+                        .map { it.split('\t') }
+                        .filter { it.size == 2 && (it[1] == "refs/tags/${mod.version}^{}" || it[1] == "refs/tags/${mod.version}") }
+                        .map { it[0] }
+                check(head in remoteShas) { "Tag ${mod.version} is not on $remote at HEAD ($head). Push it first; nothing was published." }
+            }
         }
     }
-}
-tasks.register("pushRelease") {
-    group = "release"
-    description = "Atomically pushes the release commit and tag"
-    notCompatibleWithConfigurationCache("runs git")
-    dependsOn("tagRelease")
-    doLast {
-        runner.git("remote").split("\n").forEach { runner.git("push", "--atomic", it, "HEAD", "refs/tags/${mod.version}") }
+val pushRelease =
+    tasks.register("pushRelease") {
+        group = "release"
+        description = "Atomically pushes the release commit and tag"
+        notCompatibleWithConfigurationCache("runs git")
+        dependsOn(tagRelease)
+        doLast {
+            runner.git("remote").split("\n").forEach { runner.git("push", "--atomic", it, "HEAD", "refs/tags/${mod.version}") }
+        }
     }
-}
-tasks.register("releaseAndPublish") {
-    group = "release"
-    description = "release, then publish. Run with -Preckon.stage=final"
-    dependsOn("pushRelease", tasks.publish, tasks.publishMods)
-}
-
-data class Platform(
-    val id: String,
-    val url: String,
-    val downloadsCount: Long,
-)
-
-data class ModdexProject(
-    val id: Int,
-    val slug: String,
-    val rating: Double?,
-    val curseforge: Platform?,
-    val modrinth: Platform?,
-)
-
-fun moddexLookup(
-    moddexId: String? = null,
-    curseforgeId: String? = null,
-    modrinthId: String? = null,
-): ModdexProject? {
-    val params =
-        listOf(
-            "moddex_id" to moddexId,
-            "curseforge_id" to curseforgeId,
-            "modrinth_id" to modrinthId,
-        ).mapNotNull { (key, value) ->
-            value?.trim()?.takeIf { it.isNotBlank() }?.let { key to URLEncoder.encode(it, "UTF-8") }
-        }.ifEmpty { return null }
-
-    val query = params.joinToString("&") { (key, value) -> "$key=$value" }
-    return parseModdex(fetchText("https://moddex.gg/api/v2/lookup?$query"))
-}
-
-fun parseModdex(text: String): ModdexProject {
-    val data =
-        Json
-            .parseToJsonElement(text)
-            .jsonObject
-            .getValue("data")
-            .jsonObject
-
-    fun platform(key: String): Platform? {
-        val o = data[key] as? JsonObject ?: return null
-        return Platform(
-            id = o.getValue("id").jsonPrimitive.content,
-            url = o.getValue("url").jsonPrimitive.content,
-            downloadsCount = o["downloads_count"]?.jsonPrimitive?.longOrNull ?: 0,
-        )
+val releaseAndPublish =
+    tasks.register("releaseAndPublish") {
+        group = "release"
+        description = "release, then publish. Run with -Preckon.stage=final"
+        dependsOn(pushRelease, tasks.publish, tasks.publishMods)
     }
-
-    return ModdexProject(
-        id = data.getValue("id").jsonPrimitive.int,
-        slug = data.getValue("slug").jsonPrimitive.content,
-        rating = (data["rating"] as? JsonObject)?.get("average")?.jsonPrimitive?.doubleOrNull,
-        curseforge = platform("curseforge"),
-        modrinth = platform("modrinth"),
-    )
-}
