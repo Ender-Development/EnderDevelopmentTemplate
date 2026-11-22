@@ -393,11 +393,9 @@ fun parseModdex(text: String): ModdexProject {
 fun MinimalExternalModuleDependency.toCord(): String = "${this.group}:${this.name}:${this.version}"
 
 val repoName = "Ender-Development/EnderDevelopmentTemplate"
-val templateDir = "gradle/template"
 val editorconfig = props.get("editorconfig", "spotless")
 val minecraftVersion = props.get("minecraft_version", "1.12.2")
 val rootPackage = props.get("root_package", "org.ender_development")
-val userName = props.env("DEV_USERNAME").ifBlank { props.get("minecraft_username", "Developer") }
 
 val modDependencies =
     listOf(
@@ -417,9 +415,6 @@ val modDependencies =
 val moddexProject: ModdexProject? by lazy {
     moddexLookup(props.get("moddex_id", ""), props.get("curseforge_id", ""), props.get("modrinth_id", ""))
 }
-val isPublished = moddexProject != null
-val publishToCurseForge = props.flag("publish_to_curseforge", false) && isPublished && moddexProject!!.curseforge != null
-val publishToModrinth = props.flag("publish_to_modrinth", false) && isPublished && moddexProject!!.modrinth != null
 // endregion
 
 group = rootPackage
@@ -649,12 +644,14 @@ fun modArchive(): Provider<RegularFile> {
 }
 
 publishMods {
+    if (moddexProject == null) return@publishMods
     modLoaders.add("forge")
     maxRetries = 5
     changelog = utils.markdownChangelog
     type = featPublishing.branch
     curseforge {
-        dryRun = props.flag("curseforge_debug", false) || !publishToCurseForge
+        if (!props.flag("publish_to_curseforge", false) || moddexProject!!.curseforge == null) return@curseforge
+        dryRun = props.flag("curseforge_debug", false)
         accessToken = props.env("CURSEFORGE_TOKEN").ifEmpty { return@curseforge }
         projectId = moddexProject?.curseforge?.id ?: return@curseforge
         minecraftVersions.add(minecraftVersion)
@@ -672,7 +669,8 @@ publishMods {
         }
     }
     modrinth {
-        dryRun = props.flag("modrinth_debug", false) || !publishToModrinth
+        if (!props.flag("publish_to_modrinth", false) || moddexProject!!.modrinth == null) return@modrinth
+        dryRun = props.flag("modrinth_debug", false)
         accessToken = props.env("MODRINTH_TOKEN").ifEmpty { return@modrinth }
         projectId = moddexProject?.modrinth?.id ?: return@modrinth
         minecraftVersions.add(minecraftVersion)
@@ -1229,7 +1227,7 @@ fun listRemoteTemplateFiles(): List<String> {
         ) as Map<*, *>
     return (json["tree"] as List<*>)
         .map { it as Map<*, *> }
-        .filter { it["type"] == "blob" && (it["path"] as String).startsWith("$templateDir/") }
+        .filter { it["type"] == "blob" && (it["path"] as String).startsWith("gradle/template/") }
         .map { it["path"] as String }
 }
 
