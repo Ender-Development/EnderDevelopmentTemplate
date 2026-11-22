@@ -15,6 +15,34 @@ Try to follow the [Common Changelog](https://common-changelog.org/) conventions.
 
 ### Miscellaneous
 
+## [2.4.0] - 2026-11-22
+
+### Additions
+
+- auto gradle update
+
+### Changes
+
+- refactor variable storage and access
+- refactor *.properties file loading
+- move prop utils to dedicated class
+
+### Bugfixes
+
+- property doc generation
+- allow file header with spotless off
+- also sync `libs.versions.toml`
+
+### Miscellaneous
+
+- fold section for build.gradle.kts setup section
+- bundle utility functions
+- reference tasks my variable instead of string
+- narrow down repository scope
+- update prop-docs
+- move all prop calls to PropertyManager
+- bump gradle 9.9.1 -> 9.9.2
+
 ## [2.3.4] - 2026-11-20
 
 ### Changes
@@ -344,7 +372,8 @@ _The major refactor_
 - move functionality to `build.gradle.kts`
 - updated RFG to 2.0.6
 
-[Unreleased]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.3.4...HEAD
+[Unreleased]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.4.0...HEAD
+[2.4.0]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.3.4...2.4.0
 [2.3.4]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.3.3...2.3.4
 [2.3.3]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.3.2...2.3.3
 [2.3.2]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.3.1...2.3.2
