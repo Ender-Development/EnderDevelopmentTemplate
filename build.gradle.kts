@@ -615,7 +615,6 @@ publishMods {
 }
 
 repositories {
-    mavenCentral()
     maven {
         name = "CleanroomMC Maven"
         url = uri("https://maven.cleanroommc.com")
@@ -624,6 +623,11 @@ repositories {
     maven {
         name = "Ender-Development Maven"
         url = uri("https://maven.ender-development.org/")
+        content {
+            includeGroupByRegex("org\\.ender_development(\\..*)?")
+            includeGroupByRegex("futbol(\\..*)?")
+            includeGroupByRegex("teamroots(\\..*)?")
+        }
     }
     // Better implementation of the curseforge maven, which allows adding mods that disable third party downloads
     exclusiveContent {
@@ -652,13 +656,17 @@ repositories {
         name = "Red Studio"
         url = uri("https://repo.redstudio.dev/dev")
         content {
-            includeGroup("dev.redstudio")
+            includeGroupByRegex("dev\\.redstudio(\\..*)?")
         }
     }
     maven {
         name = "BlameJared's Maven"
         url = uri("https://maven.blamejared.com/")
+        content {
+            includeGroup("CraftTweaker2")
+        }
     }
+    mavenCentral()
     mavenLocal() // Must be last for caching to work
 }
 
