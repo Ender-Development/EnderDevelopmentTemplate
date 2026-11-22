@@ -272,6 +272,57 @@ class Mod {
     }
 }
 
+val readme = Readme()
+
+class Readme {
+    val license = props.get("license", "All Rights Reserved")
+    val content = props.get("readme", $$"${mod_description}")
+    val partnership = props.get("partnership", "")
+}
+
+val utils = Utilities()
+
+class Utilities {
+    private fun cSpan(): String {
+        val yFrom = runner.git("log", "--max-parents=0", "--format=%as").split("-").first()
+        val yLast = runner.git("log", "-1", "--format=%as").split("-").first()
+        return if (yFrom == yLast) yFrom else "$yFrom-$yLast"
+    }
+
+    val latestRelease = if (mod.version.split("-").size == 1) mod.version else runner.git("tag").split("\n").last()
+    val header = "/*\n * Copyright (c) ${cSpan()} ${mod.authors.first()}\n * SPDX-License-Identifier: ${readme.license}\n */\n\n"
+    val javaVersion: String by lazy {
+        runner
+            .java("--version")
+            .firstOrNull()
+            ?.split(" ")
+            ?.getOrNull(1) ?: JavaVersion.current().toString()
+    }
+    val isTemplateRepo: Boolean by lazy {
+        runner.git("remote").split("\n").any { runner.git("remote", "get-url", it).contains(repoName) }
+    }
+
+    val versionGradle: String by lazy {
+        runner
+            .java("-jar", "gradle/wrapper/gradle-wrapper.jar", "-v")
+            .getOrNull(2)
+            ?.split(" ")
+            ?.lastOrNull() ?: GradleVersion.current().toString()
+    }
+
+    val markdownChangelog: Provider<String> =
+        provider {
+            if (!file("CHANGELOG.md").exists()) throw GradleException("CHANGELOG.md does not exist!")
+            val log =
+                changelog.renderItem(
+                    changelog.get(mod.version).withHeader(false).withEmptySections(false),
+                    Changelog.OutputType.MARKDOWN,
+                )
+            if (log.isEmpty()) throw GradleException("changelog for version ${mod.version} is empty!")
+            log
+        }
+}
+
 data class ModDependency(
     val slug: String,
     val flag: Boolean,
@@ -341,30 +392,6 @@ fun parseModdex(text: String): ModdexProject {
 
 fun MinimalExternalModuleDependency.toCord(): String = "${this.group}:${this.name}:${this.version}"
 
-val markdownChangelog: Provider<String> =
-    provider {
-        if (!file("CHANGELOG.md").exists()) throw GradleException("CHANGELOG.md does not exist!")
-        val log =
-            changelog.renderItem(
-                changelog.get(mod.version).withHeader(false).withEmptySections(false),
-                Changelog.OutputType.MARKDOWN,
-            )
-        if (log.isEmpty()) throw GradleException("changelog for version ${mod.version} is empty!")
-        log
-    }
-
-val isTemplateRepo: Boolean by lazy {
-    runner.git("remote").split("\n").any { runner.git("remote", "get-url", it).contains(repoName) }
-}
-
-val versionGradle: String by lazy {
-    runner
-        .java("-jar", "gradle/wrapper/gradle-wrapper.jar", "-v")
-        .getOrNull(2)
-        ?.split(" ")
-        ?.lastOrNull() ?: GradleVersion.current().toString()
-}
-
 val repoName = "Ender-Development/EnderDevelopmentTemplate"
 val templateDir = "gradle/template"
 val editorconfig = props.get("editorconfig", "spotless")
@@ -386,10 +413,6 @@ val modDependencies =
         ModDependency("reach-fix", props.flag("use_reachfix", false), "D#curse.maven:reach-fix-556777:${libs.versions.reachfix}"),
         ModDependency("expanded-events", props.flag("use_expandedevents", false), "D#curse.maven:expanded-events-1396395:${libs.versions.expandedevents}", availableOnModrinth = false),
     )
-
-val rmLicense = props.get("license", "All Rights Reserved")
-val rmContent = props.get("readme", $$"${mod_description}")
-val rmPartnership = props.get("partnership", "")
 
 val moddexProject: ModdexProject? by lazy {
     moddexLookup(props.get("moddex_id", ""), props.get("curseforge_id", ""), props.get("modrinth_id", ""))
@@ -508,7 +531,7 @@ idea {
                     params: String,
                 ) = add(
                     Gradle(name).apply {
-                        setProperty("taskNames", listOf((if (isTemplateRepo) "pushRelease" else "releaseAndPublish")))
+                        setProperty("taskNames", listOf((if (utils.isTemplateRepo) "pushRelease" else "releaseAndPublish")))
                         setProperty("scriptParameters", params)
                     },
                 )
@@ -522,7 +545,7 @@ idea {
                 newTask("Update Buildscripts", "updateBuildScript")
                 newTask("Apply Spotless", "spotlessApply")
 
-                if (isTemplateRepo) {
+                if (utils.isTemplateRepo) {
                     newTask("Generate Template Docs", "generatePropertyDocs")
                     newTask("Update Gradle Version", "updateGradle")
                 }
@@ -608,7 +631,7 @@ publishing {
     }
 }
 tasks.publish {
-    onlyIf { !isTemplateRepo && featPublishing.publishToMaven }
+    onlyIf { !utils.isTemplateRepo && featPublishing.publishToMaven }
 }
 
 fun modArchive(): Provider<RegularFile> {
@@ -627,7 +650,7 @@ fun modArchive(): Provider<RegularFile> {
 publishMods {
     modLoaders.add("forge")
     maxRetries = 5
-    changelog = markdownChangelog
+    changelog = utils.markdownChangelog
     type = featPublishing.branch
     curseforge {
         dryRun = props.flag("curseforge_debug", false) || !publishToCurseForge
@@ -750,27 +773,19 @@ configure<SpotlessExtension> {
         endWithNewline()
     }
     freshmark {
-        fun latestRelease(): String = if (mod.version.split("-").size == 1) mod.version else runner.git("tag").split("\n").last()
         target(".github/**/*.md", "docs/**/*.md", "gradle/**/*.md", "src/*/resources/**/*.md", "*.md")
         propertiesFile("gradle.properties")
         properties {
             putAll(extra.properties.mapValues { (k, v) -> props.get(k) })
-            put(
-                "javaVersion",
-                runner
-                    .java("--version")
-                    .firstOrNull()
-                    ?.split(" ")
-                    ?.getOrNull(1) ?: JavaVersion.current().toString(),
-            )
+            put("javaVersion", utils.javaVersion)
             put("kotlinVersion", libs.versions.kotlin.get())
             put("gradleVersion", project.gradle.gradleVersion)
             put("repoName", repoName)
             put("mavenUrl", featPublishing.mavenUrl.takeIf { featPublishing.publishToMaven }.orEmpty())
-            put("LICENSE", rmLicense)
-            put("README", rmContent)
-            put("SPONSOR", rmPartnership)
-            put("VERSION", latestRelease())
+            put("LICENSE", readme.license)
+            put("README", readme.content)
+            put("SPONSOR", readme.partnership)
+            put("VERSION", utils.latestRelease)
             put("MODRINTH", moddexProject?.modrinth?.id ?: "")
             put("MODRINTH_LINK", moddexProject?.modrinth?.url ?: "")
             put("CURSEFORGE", moddexProject?.curseforge?.id ?: "")
@@ -807,16 +822,9 @@ configure<SpotlessExtension> {
         trimTrailingWhitespace()
         endWithNewline()
     }
-    fun cSpan(): String {
-        val yFrom = runner.git("log", "--max-parents=0", "--format=%as").split("-").first()
-        val yLast = runner.git("log", "-1", "--format=%as").split("-").first()
-        return if (yFrom == yLast) yFrom else "$yFrom-$yLast"
-    }
-
-    val header = "/*\n * Copyright (c) ${cSpan()} ${mod.authors.first()}\n * SPDX-License-Identifier: $rmLicense\n */\n\n"
     java {
         target("src/main/java/**/*.java")
-        licenseHeader(header)
+        licenseHeader(utils.header)
         removeUnusedImports()
         if (editorconfig != "spotless") return@java
         importOrder()
@@ -833,7 +841,7 @@ configure<SpotlessExtension> {
     }
     kotlin {
         target("src/main/kotlin/**/*.kt")
-        licenseHeader(header)
+        licenseHeader(utils.header)
         if (editorconfig != "spotless") return@kotlin
         ktlint(libs.versions.ktlint.get()).editorConfigOverride(mapOf("ktlint_standard_package-name" to "disabled"))
     }
@@ -1028,7 +1036,7 @@ val createIJScope =
     tasks.register("createIJScope") {
         group = "ender-development"
         description = "Creates the IntelliJ scope file for the mod sources"
-        onlyIf { !isTemplateRepo }
+        onlyIf { !utils.isTemplateRepo }
         inputs.property("modName", mod.name)
         val outputFile = layout.projectDirectory.file(".idea/scopes/Mod_Source.xml")
         outputs.file(outputFile)
@@ -1310,14 +1318,14 @@ val checkBuildScriptLatest =
         group = "ender-development"
         description = "Get the version number of the latest release"
         notCompatibleWithConfigurationCache("Performs a network lookup")
-        onlyIf { !isTemplateRepo }
+        onlyIf { !utils.isTemplateRepo }
         dependsOn(checkGradleUpdate)
         doLast { logger.lifecycle("Latest Buildscript Release: ${resolveLatestTag()}") }
     }
 
 fun fetchLatestGradleVersion(): String {
     val json = JsonSlurper().parseText(fetchText("https://services.gradle.org/versions/current")) as Map<*, *>
-    return json.getOrDefault("version", versionGradle).toString()
+    return json.getOrDefault("version", utils.versionGradle).toString()
 }
 
 fun fetchSha256(url: String): String {
@@ -1393,7 +1401,7 @@ val checkBuildScriptUpdate =
         group = "ender-development"
         description = "Checks whether a newer build script version is available (does not modify anything)"
         notCompatibleWithConfigurationCache("Performs a network lookup")
-        onlyIf { !isTemplateRepo }
+        onlyIf { !utils.isTemplateRepo }
         dependsOn(checkBuildScriptLatest, checkGradleUpdate)
         doLast {
             val updates = collectUpdates()
@@ -1445,7 +1453,7 @@ val syncBuildScriptVersion =
         group = "ender-development"
         description = "Writes the buildscript_version property into the version header of the versioned files"
 
-        onlyIf { isTemplateRepo }
+        onlyIf { utils.isTemplateRepo }
         mustRunAfter(tasks.patchChangelog)
         doLast {
             require(Regex("""\d+(\.\d+)*""").matches(mod.version)) {
@@ -1622,7 +1630,7 @@ val checkPropertyDocs =
     tasks.register("checkPropertyDocs") {
         group = "ender-development"
         description = "Logs properties used in the build script that are missing or incomplete in property-docs.json"
-        onlyIf { isTemplateRepo }
+        onlyIf { utils.isTemplateRepo }
         doLast {
             val usages = scanAllProps()
             val meta = loadPropMeta()
@@ -1655,7 +1663,7 @@ val generatePropertyDocs =
     tasks.register("generatePropertyDocs") {
         group = "ender-development"
         description = "Adds new properties to property-docs.json and regenerates PROPERTIES.md"
-        onlyIf { isTemplateRepo }
+        onlyIf { utils.isTemplateRepo }
         doLast {
             val usages = scanAllProps()
             val meta = loadPropMeta().toMutableMap()
@@ -1676,7 +1684,7 @@ val generatePropertyDocs =
 
 val changelogGroups = listOf("Additions", "Changes", "Bugfixes", "Miscellaneous")
 val prefixToGroup = mapOf("add" to "Additions", "fix" to "Bugfixes", "misc" to "Miscellaneous")
-val changelogFile = file(if (isTemplateRepo) "gradle/template/CHANGELOG.md" else "CHANGELOG.md")
+val changelogFile = file(if (utils.isTemplateRepo) "gradle/template/CHANGELOG.md" else "CHANGELOG.md")
 
 changelog {
     version.set(mod.version)
@@ -1723,7 +1731,7 @@ val tagRelease =
                     appendLine("Diff: $diffLink")
                     appendLine(runner.git("log", "-1", "--format='Signed-off-by: %an <%ae>'").removeSurrounding("'"))
                 }
-            if (isTemplateRepo) {
+            if (utils.isTemplateRepo) {
                 versionedFiles.forEach { runner.git("add", file(it.path).canonicalPath) }
             }
             runner.git("add", changelogFile.canonicalPath)
@@ -1820,7 +1828,7 @@ val collectCommits =
     }
 tasks.withType<PublishToMavenRepository>().configureEach {
     dependsOn("verifyPushed")
-    onlyIf { !isTemplateRepo }
+    onlyIf { !utils.isTemplateRepo }
 }
 val verifyPushed =
     tasks.register("verifyPushed") {
