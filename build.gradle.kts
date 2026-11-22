@@ -1559,7 +1559,7 @@ fun renderProp(
     val isFlag = usages.any { it.kind == PropKind.FLAG }
     val hasEnv = usages.any { it.kind == PropKind.ENV }
     val required = usages.any { it.isRequired() }
-    val defaults = usages.filter { it.kind == PropKind.PROP }.mapNotNull { it.arg }.distinct()
+    val defaults = usages.filter { it.kind == PropKind.PROP || it.kind == PropKind.FLAG }.mapNotNull { it.arg }.distinct()
 
     val type =
         when {

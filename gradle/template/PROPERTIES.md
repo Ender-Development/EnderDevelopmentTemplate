@@ -57,7 +57,7 @@ BetterConfig extends Forge's annotation-based config system to support nested ar
 
 Kotlin library by [Ender-Development.org](https://ender-development.org) that provides various utilities and helpers for Minecraft Forge modding
 
-- **Type:** String
+- **Type:** Boolean
 - **Required:** no
 - **Default:** `${{ \"${mod_id}\" != \"catalyx\" }}`
 
@@ -534,7 +534,7 @@ A way to change visibility of Minecraft's classes, methods and fields. The AT fi
 
 - **Type:** Boolean
 - **Required:** no
-- **Default:** `true`
+- **Default:** `false`
 
 ### `use_dependency_at_files`
 
@@ -558,9 +558,9 @@ Change location and name of the AT file
 
 Change to false if your coremod doesn't have a `@Mod` annotation
 
-- **Type:** String
-- **Required:** yes
-- **Default:** none
+- **Type:** Boolean
+- **Required:** no
+- **Default:** `true`
 
 ### `coremod_plugin_class_name`
 
