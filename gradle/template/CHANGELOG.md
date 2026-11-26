@@ -15,6 +15,18 @@ Try to follow the [Common Changelog](https://common-changelog.org/) conventions.
 
 ### Miscellaneous
 
+## [2.4.2] - 2026-11-26
+
+### Changes
+
+- build(deps): bump com.diffplug.spotless from 8.11.0 to 8.12.0 (#8)
+- build(deps): bump zone.rong:mixinbooter from 12.4 to 12.5 (#9)
+- build(deps): bump zone.rong.clearskies from 2.0.0 to 2.1.0 (#10)
+
+### Bugfixes
+
+- special version handling for catalyx
+
 ## [2.4.1] - 2026-11-22
 
 ### Bugfixes
@@ -382,7 +394,8 @@ _The major refactor_
 - move functionality to `build.gradle.kts`
 - updated RFG to 2.0.6
 
-[Unreleased]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.4.1...HEAD
+[Unreleased]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.4.2...HEAD
+[2.4.2]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.4.1...2.4.2
 [2.4.1]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.4.0...2.4.1
 [2.4.0]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.3.4...2.4.0
 [2.3.4]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.3.3...2.3.4
