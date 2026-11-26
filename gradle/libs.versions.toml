@@ -9,7 +9,7 @@ jetbrainsExtension = "1.4.1"
 jetbrainsChangelog = "2.5.0"
 modPublishPlugin = "2.2.1"
 spotless = "8.11.0"
-clearskies = "2.0.0"
+clearskies = "2.1.0"
 
 # Spotless / formatting
 flexmark = "0.64.8"
