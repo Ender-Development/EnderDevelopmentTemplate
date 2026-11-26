@@ -623,6 +623,7 @@ publishing {
             from(components["java"])
             groupId = rootPackage
             artifactId = mod.id
+            version = mod.version.takeIf { mod.id != "catalyx" } ?: mod.version.substringBefore("-")
         }
     }
 }
