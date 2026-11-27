@@ -936,7 +936,7 @@ tasks.injectTags.configure {
 }
 tasks.prepareObfModsFolder.configure { finalizedBy("prioritizeCoremods") }
 tasks.spotlessApply.configure {
-    onlyIf { props.flag("disable_spotless", false) }
+    onlyIf { !props.flag("disable_spotless", false) }
     dependsOn(tasks.clearSkiesApply)
 }
 tasks.decompressDecompiledSources {
@@ -1704,7 +1704,6 @@ val verifyRelease =
             check(runner.git("status", "--porcelain").isEmpty()) { "Working tree is not clean" }
             check(runner.git("tag", "--points-at", "HEAD").isEmpty()) { "HEAD is already tagged, nothing to release" }
             check('-' !in mod.version) { "Not a release version (${mod.version}). Run with -Preckon.stage=final" }
-            delete(fileTree(layout.buildDirectory.dir("libs")) { include("*.jar") })
         }
     }
 tasks.patchChangelog { mustRunAfter("collectCommits") }
@@ -1868,4 +1867,5 @@ val releaseAndPublish =
         group = "release"
         description = "release, then publish. Run with -Preckon.stage=final"
         dependsOn(pushRelease, tasks.publish, tasks.publishMods)
+        doLast { delete(fileTree(layout.buildDirectory.dir("libs")) { include("*.jar") }) }
     }
