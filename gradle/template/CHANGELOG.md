@@ -15,6 +15,12 @@ Try to follow the [Common Changelog](https://common-changelog.org/) conventions.
 
 ### Miscellaneous
 
+## [2.4.4] - 2026-11-27
+
+### Bugfixes
+
+- delete files before upload
+
 ## [2.4.3] - 2026-11-27
 
 ### Bugfixes
@@ -406,7 +412,8 @@ _The major refactor_
 - move functionality to `build.gradle.kts`
 - updated RFG to 2.0.6
 
-[Unreleased]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.4.3...HEAD
+[Unreleased]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.4.4...HEAD
+[2.4.4]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.4.3...2.4.4
 [2.4.3]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.4.2...2.4.3
 [2.4.2]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.4.1...2.4.2
 [2.4.1]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.4.0...2.4.1
