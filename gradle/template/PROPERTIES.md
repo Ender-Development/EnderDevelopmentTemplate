@@ -59,7 +59,7 @@ Kotlin library by [Ender-Development.org](https://ender-development.org) that pr
 
 - **Type:** Boolean
 - **Required:** no
-- **Default:** `${{ \"${mod_id}\" != \"catalyx\" }}`
+- **Default:** `false`
 
 ## 🔭 Integration - Configanytime
 
