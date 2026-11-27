@@ -15,6 +15,18 @@ Try to follow the [Common Changelog](https://common-changelog.org/) conventions.
 
 ### Miscellaneous
 
+## [2.4.3] - 2026-11-27
+
+### Bugfixes
+
+- class instance order
+- providing file to publishing
+- catalyx enabled by default
+
+### Miscellaneous
+
+- update PROPERTIES.md docs
+
 ## [2.4.2] - 2026-11-26
 
 ### Changes
@@ -394,7 +406,8 @@ _The major refactor_
 - move functionality to `build.gradle.kts`
 - updated RFG to 2.0.6
 
-[Unreleased]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.4.2...HEAD
+[Unreleased]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.4.3...HEAD
+[2.4.3]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.4.2...2.4.3
 [2.4.2]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.4.1...2.4.2
 [2.4.1]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.4.0...2.4.1
 [2.4.0]: https://github.com/Ender-Development/EnderDevelopmentTemplate/compare/2.3.4...2.4.0
