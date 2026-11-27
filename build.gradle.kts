@@ -695,11 +695,11 @@ publishMods {
 }
 tasks.named("publishCurseforge").configure {
     dependsOn(tasks.reobfJar)
-    onlyIf { props.flag("publish_to_curseforge", false) && moddexProject!!.curseforge != null }
+    onlyIf { props.flag("publish_to_curseforge", true) && moddexProject!!.curseforge != null }
 }
 tasks.named("publishModrinth").configure {
     dependsOn(tasks.reobfJar)
-    onlyIf { props.flag("publish_to_modrinth", false) && moddexProject!!.modrinth != null }
+    onlyIf { props.flag("publish_to_modrinth", true) && moddexProject!!.modrinth != null }
 }
 
 repositories {
