@@ -214,7 +214,7 @@ val featKotlin = Kotlin()
 
 class Kotlin {
     val enabled = props.flag("use_kotlin", false)
-    val catalyx = props.flag("use_catalyx", $$"${{ \"${mod_id}\" != \"catalyx\" }}")
+    val catalyx = props.flag("use_catalyx", false) && mod.id != "catalyx"
     val forgelinContinuous = props.flag("use_forgelincontinuous", false) || enabled || catalyx
 }
 
