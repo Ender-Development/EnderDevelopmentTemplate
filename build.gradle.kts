@@ -278,7 +278,7 @@ class Readme {
     val license = props.get("license", "All Rights Reserved")
     val content = props.get("readme", $$"${mod_description}")
     val partnership = props.get("partnership", "")
-    val file = File("README.md")
+    val file = project.file("README.md")
 }
 
 val utils = Utilities()
