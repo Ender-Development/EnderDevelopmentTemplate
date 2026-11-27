@@ -188,6 +188,28 @@ class CommandRunner {
     }
 }
 
+val mod = Mod()
+
+class Mod {
+    val id =
+        props.get("mod_id").apply {
+            lowercase()
+            trim()
+            replace(" ", "_")
+        }
+    val name = props.get("mod_name", $$"${mod_id}")
+    val version = project.version.toString()
+    val description = props.get("mod_description", "")
+    val authors = props.list("mod_authors", ",")
+    val credits = props.get("mod_credits", "Ender-Development.org")
+    val url = props.get("mod_url")
+    val logoPath = props.get("mod_logo_path", $$"assets/${mod_id}/textures/logo.png")
+
+    init {
+        require(id.matches(Regex("^[a-z0-9_]+$"))) { "'mod_name' can only contain letters, digits or underscores!" }
+    }
+}
+
 val featAccessTransformer = AccessTransformer()
 
 class AccessTransformer {
@@ -248,28 +270,6 @@ class Publishing {
             !client && server -> ModrinthEnvironment.SERVER_ONLY
             else -> ModrinthEnvironment.CLIENT_AND_SERVER
         }
-}
-
-val mod = Mod()
-
-class Mod {
-    val id =
-        props.get("mod_id").apply {
-            lowercase()
-            trim()
-            replace(" ", "_")
-        }
-    val name = props.get("mod_name", $$"${mod_id}")
-    val version = project.version.toString()
-    val description = props.get("mod_description", "")
-    val authors = props.list("mod_authors", ",")
-    val credits = props.get("mod_credits", "Ender-Development.org")
-    val url = props.get("mod_url")
-    val logoPath = props.get("mod_logo_path", $$"assets/${mod_id}/textures/logo.png")
-
-    init {
-        require(id.matches(Regex("^[a-z0-9_]+$"))) { "'mod_name' can only contain letters, digits or underscores!" }
-    }
 }
 
 val readme = Readme()
