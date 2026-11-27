@@ -278,6 +278,7 @@ class Readme {
     val license = props.get("license", "All Rights Reserved")
     val content = props.get("readme", $$"${mod_description}")
     val partnership = props.get("partnership", "")
+    val file = File("README.md")
 }
 
 val utils = Utilities()
@@ -1738,6 +1739,8 @@ val tagRelease =
                 }
             if (utils.isTemplateRepo) {
                 versionedFiles.forEach { runner.git("add", file(it.path).canonicalPath) }
+            } else {
+                runner.git("add", readme.file.canonicalPath)
             }
             runner.git("add", changelogFile.canonicalPath)
             runner.git("commit", "-m", commitMsg)
