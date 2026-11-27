@@ -650,6 +650,7 @@ publishMods {
     maxRetries = 5
     changelog = utils.markdownChangelog
     type = featPublishing.branch
+    file = modArchive()
     curseforge {
         if (!props.flag("publish_to_curseforge", false) || moddexProject!!.curseforge == null) return@curseforge
         dryRun = props.flag("curseforge_debug", false)
