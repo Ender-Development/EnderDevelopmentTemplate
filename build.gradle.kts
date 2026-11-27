@@ -645,15 +645,13 @@ fun modArchive(): Provider<RegularFile> {
 }
 
 publishMods {
-    if (moddexProject == null) return@publishMods
     modLoaders.add("forge")
     maxRetries = 5
     changelog = utils.markdownChangelog
     type = featPublishing.branch
     file = modArchive()
     curseforge {
-        if (!props.flag("publish_to_curseforge", false) || moddexProject!!.curseforge == null) return@curseforge
-        dryRun = props.flag("curseforge_debug", false)
+        dryRun = props.flag("curseforge_debug", false) || utils.isTemplateRepo
         accessToken = props.env("CURSEFORGE_TOKEN").ifEmpty { return@curseforge }
         projectId = moddexProject?.curseforge?.id ?: return@curseforge
         minecraftVersions.add(minecraftVersion)
@@ -671,8 +669,7 @@ publishMods {
         }
     }
     modrinth {
-        if (!props.flag("publish_to_modrinth", false) || moddexProject!!.modrinth == null) return@modrinth
-        dryRun = props.flag("modrinth_debug", false)
+        dryRun = props.flag("modrinth_debug", false) || utils.isTemplateRepo
         accessToken = props.env("MODRINTH_TOKEN").ifEmpty { return@modrinth }
         projectId = moddexProject?.modrinth?.id ?: return@modrinth
         minecraftVersions.add(minecraftVersion)
@@ -694,6 +691,14 @@ publishMods {
         }
         props.list("additional_dependencies").forEach { requires(it) }
     }
+}
+tasks.named("publishCurseforge").configure {
+    dependsOn(tasks.reobfJar)
+    onlyIf { props.flag("publish_to_curseforge", false) && moddexProject!!.curseforge != null }
+}
+tasks.named("publishModrinth").configure {
+    dependsOn(tasks.reobfJar)
+    onlyIf { props.flag("publish_to_modrinth", false) && moddexProject!!.modrinth != null }
 }
 
 repositories {
