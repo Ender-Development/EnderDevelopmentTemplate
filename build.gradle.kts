@@ -675,7 +675,7 @@ publishMods {
         projectId = moddexProject?.modrinth?.id ?: return@modrinth
         minecraftVersions.add(minecraftVersion)
         if (props.flag("modrinth_sync_readme", true)) {
-            projectDescription = providers.fileContents(layout.projectDirectory.file("README.me")).asText
+            projectDescription = providers.fileContents(layout.projectDirectory.file("README.md")).asText
         }
         environment = featPublishing.environment
 
